@@ -67,6 +67,24 @@ class Peg
     end
   end
 
+  class CharSet
+    attr_reader :chars
+
+    def initialize(chars)
+      @chars = chars
+    end
+
+    def parse(input)
+      return nil if input.empty?
+
+      if chars.include?(input[0])
+        Result.new(input[0], 1)
+      else
+        nil
+      end
+    end
+  end
+
   class ZeroOrMore
     attr_reader :value
 
