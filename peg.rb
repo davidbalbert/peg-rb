@@ -196,7 +196,7 @@ class Peg
     end
 
     def parse(input)
-      puts " "*@@indent + "> Apply #{rule} - #{input.inspect}"
+      puts " "*@@indent + "> Apply #{rule} - #{input[0..input.index("\n")].inspect}"
       @@indent += 2
       res = grammar.send(rule).parse(input)
       @@indent -= 2
