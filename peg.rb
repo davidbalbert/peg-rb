@@ -184,5 +184,25 @@ class Peg
       end
     end
   end
+
+  class Apply
+    @@indent = 0
+
+    attr_reader :grammar, :rule
+
+    def initialize(grammar, rule)
+      @grammar = grammar
+      @rule = rule
+    end
+
+    def parse(input)
+      puts " "*@@indent + "> Apply #{rule} - #{input.inspect}"
+      @@indent += 2
+      res = grammar.send(rule).parse(input)
+      @@indent -= 2
+
+      res
+    end
+  end
 end
 
