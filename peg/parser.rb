@@ -21,13 +21,25 @@ class Peg::Parser < Peg
 
   def Expression
     Peg::Seq.new(
-      Peg::Apply.new(self, :Sequence),
+      Peg::Apply.new(self, :Choice),
       Peg::ZeroOrMore.new(
         Peg::Seq.new(
           Peg::Apply.new(self, :SLASH),
-          Peg::Apply.new(self, :Sequence),
+          Peg::Apply.new(self, :Choice),
         ),
       ),
+    )
+  end
+
+  def Choice
+    Peg::Seq.new(
+      Peg::Apply.new(self, :Sequence),
+      Peg::Maybe.new(
+        Peg::Seq.new(
+          Peg::Term.new("--"),
+          Peg::Apply.new(self, :Identifier)
+        )
+      )
     )
   end
 
@@ -220,7 +232,8 @@ Peg::META_GRAMMAR = <<~END
 Grammar         <- Spacing Definition+ EndOfFile
 
 Definition      <- Identifier LEFTARROW Expression
-Expression      <- Sequence ( SLASH Sequence )*
+Expression      <- Choice ( SLASH Choice )*
+Choice          <- Sequence ( '--' Identifier )?
 Sequence        <- Prefix*
 Prefix          <- ( AND / NOT )? Suffix
 Suffix          <- Primary ( QUERY / STAR / PLUS )?
@@ -262,7 +275,8 @@ END
 # Grammar         <- Spacing Definition+ EndOfFile
 #
 # Definition      <- Identifier LEFTARROW Expression
-# Expression      <- Sequence ( SLASH Sequence )*
+# Expression      <- Choice ( SLASH Choice )*
+# Choice          <- Sequence ( '--' Identifier )?
 # Sequence        <- Prefix*
 # Prefix          <- ( AND / NOT )? Suffix
 # Suffix          <- Primary ( QUERY / STAR / PLUS )?
