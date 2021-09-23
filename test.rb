@@ -1,3 +1,5 @@
+require './peg'
+
 require 'minitest/autorun'
 
 # words <- (word space)* word
