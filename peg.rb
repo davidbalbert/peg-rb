@@ -1,4 +1,22 @@
+class Module
+  def module_attribute(name, default: nil)
+    define_singleton_method name do
+      instance_variable_get "@#{name}"
+    end
+
+    define_singleton_method "#{name}=" do |new_value|
+      instance_variable_set "@#{name}", new_value
+    end
+
+    if default != nil
+      instance_variable_set "@#{name}", default
+    end
+  end
+end
+
 class Peg
+  module_attribute :debug, default: false
+
   def match?(input)
     !!parse(input)
   end
@@ -196,9 +214,18 @@ class Peg
     end
 
     def parse(input)
-      puts " "*@@indent + "> Apply #{rule} - #{input[0..input.index("\n")].inspect}"
+      debug(input) do
+        grammar.send(rule).parse(input)
+      end
+    end
+
+    def debug(input)
+      return yield unless Peg.debug
+
+      puts " "*@@indent + "> Apply #{rule} -" + " "*(60-@@indent - rule.size) + input[0..input.index("\n")].inspect
+
       @@indent += 2
-      res = grammar.send(rule).parse(input)
+      res = yield
       @@indent -= 2
 
       res
