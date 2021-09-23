@@ -1,6 +1,6 @@
 class Peg::Parser < Peg
   def root
-    self.Grammar
+    Peg::Apply.new(self, :Grammar)
   end
 
   def Grammar
@@ -237,11 +237,11 @@ Literal         <- ['] ( !['] Char  )* ['] Spacing
                  / ["] ( !["] Char  )* ["] Spacing
 Class           <- '[' ( !']' Range )* ']' Spacing
 Range           <- Char '-' Char / Char
-Char            <- '\\' [abefnrtv'"\[\]\\]
-                 / '\\' [0-3][0-7][0-7]
-                 / '\\' [0-7][0-7]?
-                 / '\\' '-'
-                 / !'\\' .
+Char            <- '\\\\' [abefnrtv'"\\[\\]\\\\]
+                 / '\\\\' [0-3][0-7][0-7]
+                 / '\\\\' [0-7][0-7]?
+                 / '\\\\' '-'
+                 / !'\\\\' .
 LEFTARROW       <- '<-' Spacing
 SLASH           <- '/' Spacing
 AND             <- '&' Spacing
@@ -258,3 +258,45 @@ Space           <- ' ' / '\t' / EndOfLine
 EndOfLine       <- '\r\n' / '\n' / '\r'
 EndOfFile       <- !.
 END
+
+# Grammar         <- Spacing Definition+ EndOfFile
+#
+# Definition      <- Identifier LEFTARROW Expression
+# Expression      <- Sequence ( SLASH Sequence )*
+# Sequence        <- Prefix*
+# Prefix          <- ( AND / NOT )? Suffix
+# Suffix          <- Primary ( QUERY / STAR / PLUS )?
+# Primary         <- Identifier !LEFTARROW
+#                  / OPEN Expression CLOSE
+#                  / Literal
+#                  / Class
+#                  / DOT
+#
+# Identifier      <- IdentStart IdentCont* Spacing
+# IdentStart      <- [a-zA-Z_]
+# IdentCont       <- IdentStart / [0-9]
+# Literal         <- ['] ( !['] Char  )* ['] Spacing
+#                  / ["] ( !["] Char  )* ["] Spacing
+# Class           <- '[' ( !']' Range )* ']' Spacing
+# Range           <- Char '-' Char / Char
+# Char            <- '\\' [abefnrtv'"\[\]\\]
+#                  / '\\' [0-3][0-7][0-7]
+#                  / '\\' [0-7][0-7]?
+#                  / '\\' '-'
+#                  / !'\\' .
+# LEFTARROW       <- '<-' Spacing
+# SLASH           <- '/' Spacing
+# AND             <- '&' Spacing
+# NOT             <- '!' Spacing
+# QUERY           <- '?' Spacing
+# STAR            <- '*' Spacing
+# PLUS            <- '+' Spacing
+# OPEN            <- '(' Spacing
+# CLOSE           <- ')' Spacing
+# DOT             <- '.' Spacing
+# Spacing         <- ( Space / Comment )*
+# Comment         <- '#' ( !EndOfLine . )* EndOfLine
+# Space           <- ' ' / '\t' / EndOfLine
+# EndOfLine       <- '\r\n' / '\n' / '\r'
+# EndOfFile       <- !.
+
