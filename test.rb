@@ -2,34 +2,34 @@ require './peg'
 
 require 'minitest/autorun'
 
+class Test < MiniTest::Test
+  def self.test(name, &block)
+    define_method "test_#{name.gsub(/\s/, '_')}", &block
+  end
+end
+
 # words <- (word space)* word
 # word  <- [a-z]+
 # space  <- (" " / "\t")+
 
 class Words < Peg
   def root
-    words
+    Peg::Apply.new(self, :words)
   end
 
   def words
     Peg::Seq.new(
-      Peg::ZeroOrMore.new(Peg::Seq.new(word, space)),
-      word
+      Peg::ZeroOrMore.new(Peg::Seq.new(Peg::Apply.new(self, :word), Peg::Apply.new(self, :space))),
+      Peg::Apply.new(self, :word)
     )
   end
 
   def word
-    Peg::OneOrMore.new(Peg::Choice.new(*%w(a b c d e f g h i j k l m n o p q r s t u v w x y z).map { |s| Peg::Term.new(s) }))
+    Peg::OneOrMore.new(Peg::CharSet.new("abcdefghijklmnopqrstuvwxyz"))
   end
 
   def space
     Peg::OneOrMore.new(Peg::Choice.new(Peg::Term.new(" "), Peg::Term.new("\t")))
-  end
-end
-
-class Test < MiniTest::Test
-  def self.test(name, &block)
-    define_method "test_#{name.gsub(/\s/, '_')}", &block
   end
 end
 
@@ -60,22 +60,22 @@ end
 class Calc < Peg
   def root
     Peg::Seq.new(
-      Peg::ZeroOrMore.new(space),
-      expr,
-      Peg::ZeroOrMore.new(space),
-      eof
+      Peg::ZeroOrMore.new(Peg::Apply.new(self, :space)),
+      Peg::Apply.new(self, :expr),
+      Peg::ZeroOrMore.new(Peg::Apply.new(self, :space)),
+      Peg::Apply.new(self, :eof),
     )
   end
 
   def expr
     Peg::Seq.new(
-      Peg::ZeroOrMore.new(Peg::Seq.new(number, plus)),
-      number
+      Peg::ZeroOrMore.new(Peg::Seq.new(Peg::Apply.new(self, :number), Peg::Apply.new(self, :plus))),
+      Peg::Apply.new(self, :number)
     )
   end
 
   def plus
-    Peg::Seq.new(Peg::Term.new("+"), Peg::ZeroOrMore.new(space))
+    Peg::Seq.new(Peg::Term.new("+"), Peg::ZeroOrMore.new(Peg::Apply.new(self, :space)))
   end
 
   def number
@@ -83,10 +83,10 @@ class Calc < Peg
       Peg::Maybe.new(
         Peg::Seq.new(
           Peg::Term.new("-"),
-          Peg::ZeroOrMore.new(space),
+          Peg::ZeroOrMore.new(Peg::Apply.new(self, :space)),
         )
       ),
-      positive_number,
+      Peg::Apply.new(self, :positive_number),
     )
   end
 
@@ -95,7 +95,7 @@ class Calc < Peg
       Peg::OneOrMore.new(
         Peg::Choice.new(*%w(0 1 2 3 4 5 6 7 8 9).map { |s| Peg::Term.new(s) })
       ),
-      Peg::ZeroOrMore.new(space)
+      Peg::ZeroOrMore.new(Peg::Apply.new(self, :space))
     )
   end
 

@@ -17,15 +17,41 @@ end
 class Peg
   module_attribute :debug, default: false
 
+  def self.match?(input)
+    new.match?(input)
+  end
+
+  def self.parse(input)
+    new.parse(input)
+  end
+
   def match?(input)
-    !!parse(input)
+    parse(input).success?
   end
 
   def parse(input)
     root.parse(input)
   end
 
-  Result = Struct.new(:value, :nchars)
+  Success = Struct.new(:value, :nchars) do
+    def success?
+      true
+    end
+
+    def fail?
+      false
+    end
+  end
+
+  class Failure
+    def success?
+      false
+    end
+
+    def fail?
+      true
+    end
+  end
 
   class Term
     attr_reader :value
@@ -36,9 +62,9 @@ class Peg
 
     def parse(input)
       if input.start_with?(value)
-        Result.new(value, value.size)
+        Success.new(value, value.size)
       else
-        nil
+        Failure.new
       end
     end
   end
@@ -51,12 +77,12 @@ class Peg
     end
 
     def parse(input)
-      res = Result.new([], 0)
+      res = Success.new([], 0)
 
       values.each do |v|
         r = v.parse(input)
 
-        return nil unless r
+        return Failure.new unless r.success?
 
         res.value << r.value
         res.nchars += r.nchars
@@ -76,12 +102,12 @@ class Peg
 
     def parse(input)
       options.each do |opt|
-        if res = opt.parse(input)
+        if (res = opt.parse(input)).success?
           return res
         end
       end
 
-      nil
+      Failure.new
     end
   end
 
@@ -93,12 +119,12 @@ class Peg
     end
 
     def parse(input)
-      return nil if input.empty?
+      return Failure.new if input.empty?
 
       if chars.include?(input[0])
-        Result.new(input[0], 1)
+        Success.new(input[0], 1)
       else
-        nil
+        Failure.new
       end
     end
   end
@@ -111,12 +137,12 @@ class Peg
     end
 
     def parse(input)
-      res = Result.new([], 0)
+      res = Success.new([], 0)
 
       loop do
         r = value.parse(input)
 
-        return res unless r
+        return res unless r.success?
 
         res.value << r.value
         res.nchars += r.nchars
@@ -133,14 +159,14 @@ class Peg
     end
 
     def parse(input)
-      res = nil
+      res = Failure.new
 
       loop do
         r = value.parse(input)
 
-        return res unless r
+        return res unless r.success?
 
-        res ||= Result.new([], 0)
+        res = Success.new([], 0) if res.fail?
         res.value << r.value
         res.nchars += r.nchars
         input = input[r.nchars..]
@@ -156,16 +182,20 @@ class Peg
     end
 
     def parse(input)
-      value.parse(input) || Result.new(nil, 0)
+      if (res = value.parse(input)).success?
+        res
+      else
+        Success.new(nil, 0)
+      end
     end
   end
 
   class Any
     def parse(input)
       if input.size > 0
-        Result.new(input[0], 1)
+        Success.new(input[0], 1)
       else
-        nil
+        Failure.new
       end
     end
   end
@@ -179,9 +209,12 @@ class Peg
 
     def parse(input)
       res = value.parse(input)
-      res&.nchars = 0
 
-      res
+      if res.success?
+        Success.new(nil, 0)
+      else
+        Failure.new
+      end
     end
   end
 
@@ -195,10 +228,10 @@ class Peg
     def parse(input)
       res = value.parse(input)
 
-      if res
-        nil
+      if res.success?
+        Failure.new
       else
-        Result.new(nil, 0)
+        Success.new(nil, 0)
       end
     end
   end
