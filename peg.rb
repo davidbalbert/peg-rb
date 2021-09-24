@@ -17,12 +17,18 @@ end
 class Peg
   module_attribute :debug, default: false
 
+  attr_reader :actions
+
   def self.match?(input)
     new.match?(input)
   end
 
-  def self.parse(input)
-    new.parse(input)
+  def self.parse(input, actions: nil)
+    new(actions).parse(input)
+  end
+
+  def initialize(actions=nil)
+    @actions = actions
   end
 
   def match?(input)
@@ -137,14 +143,14 @@ class Peg
     end
 
     def parse(input)
-      res = Success.new([], 0)
+      res = Success.new([[]], 0)
 
       loop do
         r = value.parse(input)
 
         return res unless r.success?
 
-        res.value << r.value
+        res.value[0] << r.value
         res.nchars += r.nchars
         input = input[r.nchars..]
       end
@@ -166,8 +172,8 @@ class Peg
 
         return res unless r.success?
 
-        res = Success.new([], 0) if res.fail?
-        res.value << r.value
+        res = Success.new([[]], 0) if res.fail?
+        res.value[0] << r.value
         res.nchars += r.nchars
         input = input[r.nchars..]
       end
@@ -197,6 +203,14 @@ class Peg
       else
         Failure.new
       end
+    end
+  end
+
+  # Is this the right thing to do for empty
+  # rules? I'm not sure.
+  class Never
+    def parse(input)
+      Failure.new
     end
   end
 
@@ -248,14 +262,20 @@ class Peg
 
     def parse(input)
       debug(input) do
-        grammar.send(rule).parse(input)
+        res = grammar.send(rule).parse(input)
+
+        if res.success? && grammar.actions&.respond_to?(rule)
+          res.value = grammar.actions.send(rule, *Array(res.value))
+        end
+
+        res
       end
     end
 
     def debug(input)
       return yield unless Peg.debug
 
-      puts " "*@@indent + "> Apply #{rule} -" + " "*(60-@@indent - rule.size) + input[0..input.index("\n")].inspect
+      puts " "*@@indent + "> Apply #{rule} -" + " "*(80-@@indent - rule.size) + input[0..input.index("\n")].inspect
 
       @@indent += 2
       res = yield

@@ -36,7 +36,7 @@ class Peg::Parser < Peg
       Peg::Apply.new(self, :Sequence),
       Peg::Maybe.new(
         Peg::Seq.new(
-          Peg::Term.new("--"),
+          Peg::Apply.new(self, :DASHES),
           Peg::Apply.new(self, :Identifier)
         )
       )
@@ -69,15 +69,23 @@ class Peg::Parser < Peg
 
   def Primary
     Peg::Choice.new(
-      Peg::Seq.new(
-        Peg::Apply.new(self, :Identifier),
-        Peg::Not.new(Peg::Apply.new(self, :LEFTARROW))
-      ),
-      Peg::Seq.new(Peg::Apply.new(self, :OPEN), Peg::Apply.new(self, :Expression), Peg::Apply.new(self, :CLOSE)),
+      Peg::Apply.new(self, :Primary_identifier),
+      Peg::Apply.new(self, :Primary_group),
       Peg::Apply.new(self, :Literal),
       Peg::Apply.new(self, :Class),
       Peg::Apply.new(self, :DOT),
     )
+  end
+
+  def Primary_identifier
+    Peg::Seq.new(
+      Peg::Apply.new(self, :Identifier),
+      Peg::Not.new(Peg::Apply.new(self, :LEFTARROW))
+    )
+  end
+
+  def Primary_group
+    Peg::Seq.new(Peg::Apply.new(self, :OPEN), Peg::Apply.new(self, :Expression), Peg::Apply.new(self, :CLOSE))
   end
 
   def Identifier
@@ -130,19 +138,92 @@ class Peg::Parser < Peg
 
   def Range
     Peg::Choice.new(
-      Peg::Seq.new(self.Char, Peg::Term.new("-"), Peg::Apply.new(self, :Char)),
+      Peg::Apply.new(self, :Range_multiple),
       Peg::Apply.new(self, :Char),
     )
   end
 
+  def Range_multiple
+    Peg::Seq.new(self.Char, Peg::Term.new("-"), Peg::Apply.new(self, :Char))
+  end
+
   def Char
     Peg::Choice.new(
-      Peg::Seq.new(Peg::Term.new("\\"), Peg::CharSet.new("abefnrtv'\"[]\\")),
-      Peg::Seq.new(Peg::Term.new("\\"), Peg::CharSet.new("0123"), Peg::CharSet.new("01234567"), Peg::CharSet.new("01234567")),
-      Peg::Seq.new(Peg::Term.new("\\"), Peg::CharSet.new("01234567"), Peg::Maybe.new(Peg::CharSet.new("01234567"))),
-      Peg::Term.new("\\-"),
-      Peg::Seq.new(Peg::Not.new(Peg::Term.new("\\")), Peg::Any.new),
+      Peg::Apply.new(self, :Char_backslash),
+      Peg::Apply.new(self, :Char_doubleQuote),
+      Peg::Apply.new(self, :Char_singleQuote),
+      Peg::Apply.new(self, :Char_openSquare),
+      Peg::Apply.new(self, :Char_closeSquare),
+      Peg::Apply.new(self, :Char_backspace),
+      Peg::Apply.new(self, :Char_newline),
+      Peg::Apply.new(self, :Char_carriageReturn),
+      Peg::Apply.new(self, :Char_tab),
+      Peg::Apply.new(self, :Char_unicode),
+      Peg::Apply.new(self, :Char_hex),
+      Peg::Apply.new(self, :Char_regular),
     )
+  end
+
+  def Char_backslash
+    Peg::Term.new("\\\\")
+  end
+
+  def Char_doubleQuote
+    Peg::Term.new("\\\"")
+  end
+
+  def Char_singleQuote
+    Peg::Term.new("\\\'")
+  end
+
+  def Char_openSquare
+    Peg::Term.new("\\[")
+  end
+
+  def Char_closeSquare
+    Peg::Term.new("\\]")
+  end
+
+  def Char_backspace
+    Peg::Term.new("\\b")
+  end
+
+  def Char_newline
+    Peg::Term.new("\\n")
+  end
+
+  def Char_carriageReturn
+    Peg::Term.new("\\r")
+  end
+
+  def Char_tab
+    Peg::Term.new("\\t")
+  end
+
+  def Char_unicode
+    Peg::Seq.new(
+      Peg::Term.new("\\u"),
+      Peg::Apply.new(self, :Hex),
+      Peg::Apply.new(self, :Hex),
+      Peg::Apply.new(self, :Hex),
+      Peg::Apply.new(self, :Hex),
+    )
+  end
+
+  def Char_hex
+    Peg::Seq.new(
+      Peg::Term.new("\\x"),
+      Peg::Apply.new(self, :Hex),
+      Peg::Apply.new(self, :Hex),
+    )
+  end
+
+  def Char_regular
+    Peg::Seq.new(Peg::Not.new(Peg::Term.new("\\")), Peg::Any.new)
+  end
+
+  def Hex
+    Peg::CharSet.new("0123456789abcdefABCDEF")
   end
 
   def LEFTARROW
@@ -183,6 +264,10 @@ class Peg::Parser < Peg
 
   def DOT
     Peg::Seq.new(Peg::Term.new("."), Peg::Apply.new(self, :Spacing))
+  end
+
+  def DASHES
+    Peg::Seq.new(Peg::Term.new('--'), Peg::Apply.new(self, :Spacing))
   end
 
   def Spacing
@@ -228,17 +313,17 @@ class Peg::Parser < Peg
   end
 end
 
-Peg::META_GRAMMAR = <<~END
+Peg::META_GRAMMAR = <<-'END'
 Grammar         <- Spacing Definition+ EndOfFile
 
 Definition      <- Identifier LEFTARROW Expression
 Expression      <- Choice ( SLASH Choice )*
-Choice          <- Sequence ( '--' Identifier )?
+Choice          <- Sequence ( DASHES Identifier )?
 Sequence        <- Prefix*
 Prefix          <- ( AND / NOT )? Suffix
 Suffix          <- Primary ( QUERY / STAR / PLUS )?
-Primary         <- Identifier !LEFTARROW
-                 / OPEN Expression CLOSE
+Primary         <- Identifier !LEFTARROW -- identifier
+                 / OPEN Expression CLOSE -- group
                  / Literal
                  / Class
                  / DOT
@@ -249,12 +334,23 @@ IdentCont       <- IdentStart / [0-9]
 Literal         <- ['] ( !['] Char  )* ['] Spacing
                  / ["] ( !["] Char  )* ["] Spacing
 Class           <- '[' ( !']' Range )* ']' Spacing
-Range           <- Char '-' Char / Char
-Char            <- '\\\\' [abefnrtv'"\\[\\]\\\\]
-                 / '\\\\' [0-3][0-7][0-7]
-                 / '\\\\' [0-7][0-7]?
-                 / '\\\\' '-'
-                 / !'\\\\' .
+Range           <- Char '-' Char -- multiple
+                 / Char
+
+Char            <- '\\\\'                -- backslash
+                 / '\\\"'                -- doubleQuote
+                 / '\\\''                -- singleQuote
+                 / '\\['                 -- openSquare
+                 / '\\]'                 -- closeSquare
+                 / '\\b'                 -- backspace
+                 / '\\n'                 -- newline
+                 / '\\r'                 -- carriageReturn
+                 / '\\t'                 -- tab
+                 / '\\u' Hex Hex Hex Hex -- unicode
+                 / '\\x' Hex Hex         -- hex
+                 / !'\\' .               -- regular
+
+Hex             <- [0-9a-fA-F]
 LEFTARROW       <- '<-' Spacing
 SLASH           <- '/' Spacing
 AND             <- '&' Spacing
@@ -265,52 +361,10 @@ PLUS            <- '+' Spacing
 OPEN            <- '(' Spacing
 CLOSE           <- ')' Spacing
 DOT             <- '.' Spacing
+DASHES          <- '--' Spacing
 Spacing         <- ( Space / Comment )*
 Comment         <- '#' ( !EndOfLine . )* EndOfLine
 Space           <- ' ' / '\t' / EndOfLine
 EndOfLine       <- '\r\n' / '\n' / '\r'
 EndOfFile       <- !.
 END
-
-# Grammar         <- Spacing Definition+ EndOfFile
-#
-# Definition      <- Identifier LEFTARROW Expression
-# Expression      <- Choice ( SLASH Choice )*
-# Choice          <- Sequence ( '--' Identifier )?
-# Sequence        <- Prefix*
-# Prefix          <- ( AND / NOT )? Suffix
-# Suffix          <- Primary ( QUERY / STAR / PLUS )?
-# Primary         <- Identifier !LEFTARROW
-#                  / OPEN Expression CLOSE
-#                  / Literal
-#                  / Class
-#                  / DOT
-#
-# Identifier      <- IdentStart IdentCont* Spacing
-# IdentStart      <- [a-zA-Z_]
-# IdentCont       <- IdentStart / [0-9]
-# Literal         <- ['] ( !['] Char  )* ['] Spacing
-#                  / ["] ( !["] Char  )* ["] Spacing
-# Class           <- '[' ( !']' Range )* ']' Spacing
-# Range           <- Char '-' Char / Char
-# Char            <- '\\' [abefnrtv'"\[\]\\]
-#                  / '\\' [0-3][0-7][0-7]
-#                  / '\\' [0-7][0-7]?
-#                  / '\\' '-'
-#                  / !'\\' .
-# LEFTARROW       <- '<-' Spacing
-# SLASH           <- '/' Spacing
-# AND             <- '&' Spacing
-# NOT             <- '!' Spacing
-# QUERY           <- '?' Spacing
-# STAR            <- '*' Spacing
-# PLUS            <- '+' Spacing
-# OPEN            <- '(' Spacing
-# CLOSE           <- ')' Spacing
-# DOT             <- '.' Spacing
-# Spacing         <- ( Space / Comment )*
-# Comment         <- '#' ( !EndOfLine . )* EndOfLine
-# Space           <- ' ' / '\t' / EndOfLine
-# EndOfLine       <- '\r\n' / '\n' / '\r'
-# EndOfFile       <- !.
-
