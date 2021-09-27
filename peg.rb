@@ -23,8 +23,8 @@ class Peg
     new.match?(input)
   end
 
-  def self.parse(input, actions: nil)
-    new(actions).parse(input)
+  def self.parse(input, actions: nil, rule: :root)
+    new(actions).parse(input, rule: rule)
   end
 
   def initialize(actions=nil)
@@ -35,8 +35,8 @@ class Peg
     parse(input).success?
   end
 
-  def parse(input)
-    root.parse(input)
+  def parse(input, rule:)
+    Apply.new(self, rule).parse(input)
   end
 
   Success = Struct.new(:value, :nchars) do
@@ -73,6 +73,10 @@ class Peg
         Failure.new
       end
     end
+
+    def enumerable?
+      false
+    end
   end
 
   class Seq
@@ -97,6 +101,10 @@ class Peg
 
       res
     end
+
+    def enumerable?
+      false
+    end
   end
 
   class Choice
@@ -114,6 +122,10 @@ class Peg
       end
 
       Failure.new
+    end
+
+    def enumerable?
+      false
     end
   end
 
@@ -133,6 +145,10 @@ class Peg
         Failure.new
       end
     end
+
+    def enumerable?
+      false
+    end
   end
 
   class ZeroOrMore
@@ -143,17 +159,21 @@ class Peg
     end
 
     def parse(input)
-      res = Success.new([[]], 0)
+      res = Success.new([], 0)
 
       loop do
         r = value.parse(input)
 
         return res unless r.success?
 
-        res.value[0] << r.value
+        res.value << r.value
         res.nchars += r.nchars
         input = input[r.nchars..]
       end
+    end
+
+    def enumerable?
+      true
     end
   end
 
@@ -172,11 +192,15 @@ class Peg
 
         return res unless r.success?
 
-        res = Success.new([[]], 0) if res.fail?
-        res.value[0] << r.value
+        res = Success.new([], 0) if res.fail?
+        res.value << r.value
         res.nchars += r.nchars
         input = input[r.nchars..]
       end
+    end
+
+    def enumerable?
+      true
     end
   end
 
@@ -194,6 +218,10 @@ class Peg
         Success.new(nil, 0)
       end
     end
+
+    def enumerable?
+      false
+    end
   end
 
   class Any
@@ -204,6 +232,10 @@ class Peg
         Failure.new
       end
     end
+
+    def enumerable?
+      false
+    end
   end
 
   # Is this the right thing to do for empty
@@ -211,6 +243,10 @@ class Peg
   class Never
     def parse(input)
       Failure.new
+    end
+
+    def enumerable?
+      false
     end
   end
 
@@ -230,6 +266,10 @@ class Peg
         Failure.new
       end
     end
+
+    def enumerable?
+      false
+    end
   end
 
   class Not
@@ -248,6 +288,10 @@ class Peg
         Success.new(nil, 0)
       end
     end
+
+    def enumerable?
+      false
+    end
   end
 
   class Apply
@@ -262,14 +306,23 @@ class Peg
 
     def parse(input)
       debug(input) do
-        res = grammar.send(rule).parse(input)
+        body = grammar.send(rule)
+        res = body.parse(input)
 
         if res.success? && grammar.actions&.respond_to?(rule)
-          res.value = grammar.actions.send(rule, *Array(res.value))
+          if body.enumerable?
+            res.value = grammar.actions.send(rule, res.value)
+          else
+            res.value = grammar.actions.send(rule, *Array(res.value))
+          end
         end
 
         res
       end
+    end
+
+    def enumerable?
+      false
     end
 
     def debug(input)

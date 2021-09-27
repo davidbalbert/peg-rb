@@ -1,8 +1,158 @@
 class Peg
+  module AST
+    Grammar = Struct.new(:rules) do
+      def to_rb
+        <<~RUBY
+          class G
+            def root
+              Peg::Apply.new(self, :#{rules.first.name})
+            end
+
+            #{rules.map {|r| r.to_rb}.join("\n\n")}
+          end
+        RUBY
+      end
+    end
+
+    Rule = Struct.new(:name, :body) do
+      def to_rb
+        <<~RUBY
+          def #{name}
+            #{body.to_rb}
+          end
+        RUBY
+      end
+    end
+
+    Choice = Struct.new(:options) do
+      def to_rb
+        <<~RUBY
+          Peg::Choice.new(
+            #{options.map {|o| o.to_rb}.join(",\n")}
+          )
+        RUBY
+      end
+    end
+
+    Seq = Struct.new(:exps) do
+      def to_rb
+        <<~RUBY
+          Peg::Seq.new(
+            #{exps.map {|e| e.to_rb}.join(",\n")}
+          )
+        RUBY
+      end
+    end
+
+    CharSet = Struct.new(:chars) do
+      def to_rb
+        <<~RUBY
+          Peg::CharSet.new(#{chars.inspect})
+        RUBY
+      end
+    end
+
+    ZeroOrMore = Struct.new(:value) do
+      def to_rb
+        <<~RUBY
+          Peg::ZeroOrMore.new(
+            #{value.to_rb}
+          )
+        RUBY
+      end
+    end
+
+    OneOrMore = Struct.new(:value) do
+      def to_rb
+        <<~RUBY
+          Peg::OneOrMore.new(
+            #{value.to_rb}
+          )
+        RUBY
+      end
+    end
+
+    Maybe = Struct.new(:value) do
+      def to_rb
+        <<~RUBY
+          Peg::Maybe.new(
+            #{value.to_rb}
+          )
+        RUBY
+      end
+    end
+
+    class Any
+      def to_rb
+        <<~RUBY
+          Peg::Any.new
+        RUBY
+      end
+    end
+
+    class Never
+      def to_rb
+        <<~RUBY
+          Peg::Never.new
+        RUBY
+      end
+    end
+
+    And = Struct.new(:value) do
+      def to_rb
+        <<~RUBY
+          Peg::And.new(
+            #{value.to_rb}
+          )
+        RUBY
+      end
+    end
+
+
+    Not = Struct.new(:value) do
+      def to_rb
+        <<~RUBY
+          Peg::Not.new(
+            #{value.to_rb}
+          )
+        RUBY
+      end
+    end
+
+    Apply = Struct.new(:rule) do
+      def to_rb
+        <<~RUBY
+          Peg::Apply.new(self, :#{rule})
+        RUBY
+      end
+    end
+
+    Term = Struct.new(:value) do
+      def to_rb
+        <<~RUBY
+          Peg::Term.new(#{value.inspect})
+        RUBY
+      end
+    end
+  end
+
   class Generator
+    def Grammar(spacing, rules, eof)
+      AST::Grammar.new(rules)
+    end
+
+    def Definition(name, _, expression)
+      AST::Rule.new(name, expression)
+    end
+
     def Expression(choice, choices)
       # choices: [('/', String)...]
-      Choice.new(choice, *choices.map {|(_, c)| c})
+
+      if choices.empty?
+        choice
+      else
+        AST::Choice.new([choice, *choices.map {|(_, c)| c}])
+      end
     end
 
     def Choice(seq, rule_name)
@@ -19,20 +169,20 @@ class Peg
     def Sequence(prefixes)
       case prefixes.size
       when 0
-        Never.new
+        AST::Never.new
       when 1
         prefixes[0]
       else
-        Seq.new(*prefixes)
+        AST::Seq.new(prefixes)
       end
     end
 
     def Prefix(prefix, suffix)
       case prefix
       when "&"
-        And.new(suffix)
+        AST::And.new(suffix)
       when "!"
-        Not.new(suffix)
+        AST::Not.new(suffix)
       when nil
         suffix
       else
@@ -43,11 +193,11 @@ class Peg
     def Suffix(primary, suffix)
       case suffix
       when "?"
-        Maybe.new(primary)
+        AST::Maybe.new(primary)
       when "*"
-        ZeroOrMore.new(primary)
+        AST::ZeroOrMore.new(primary)
       when "+"
-        OneOrMore.new(primary)
+        AST::OneOrMore.new(primary)
       when nil
         primary
       else
@@ -56,7 +206,7 @@ class Peg
     end
 
     def Primary_identifier(id, _)
-      id
+      AST::Apply.new(id)
     end
 
     def Primary_group(_, expr, _)
@@ -69,12 +219,12 @@ class Peg
 
     def Literal(_, chars, _, _)
       # chars: [(nil, String)...]
-      Term.new(chars.map {|(_, c)| c }.join)
+      AST::Term.new(chars.map {|(_, c)| c }.join)
     end
 
     def Class(_, ranges, _, _)
       # ranges: [(nil, String)...]
-      CharSet.new(ranges.map {|(_, c)| c }.join)
+      AST::CharSet.new(ranges.map {|(_, c)| c }.join)
     end
 
     def Range_multiple(first, _, last)
@@ -166,7 +316,7 @@ class Peg
     end
 
     def DOT(_, _)
-      Any.new
+      AST::Any.new
     end
 
     def DASHES(dashes, _)
