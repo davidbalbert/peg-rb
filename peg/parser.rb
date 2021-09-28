@@ -9,7 +9,7 @@ class Peg::Parser < Peg
       Peg::OneOrMore.new(
         Peg::Apply.new(self, :Definition)
       ),
-      Peg::Apply.new(self, :EndOfFile),
+      Peg::Apply.new(self, :EndOfFile)
     )
   end
 
@@ -40,8 +40,8 @@ class Peg::Parser < Peg
         Peg::Seq.new(
           Peg::Apply.new(self, :SLASH),
           Peg::Apply.new(self, :Sequence)
-        ),
-      ),
+        )
+      )
     )
   end
 
@@ -83,8 +83,8 @@ class Peg::Parser < Peg
           Peg::Apply.new(self, :QUERY),
           Peg::Apply.new(self, :STAR),
           Peg::Apply.new(self, :PLUS)
-        ),
-      ),
+        )
+      )
     )
   end
 
@@ -94,7 +94,7 @@ class Peg::Parser < Peg
       Peg::Apply.new(self, :Primary_group),
       Peg::Apply.new(self, :Literal),
       Peg::Apply.new(self, :Class),
-      Peg::Apply.new(self, :DOT),
+      Peg::Apply.new(self, :DOT)
     )
   end
 
@@ -186,13 +186,13 @@ class Peg::Parser < Peg
   def Range
     Peg::Choice.new(
       Peg::Apply.new(self, :Range_multiple),
-      Peg::Apply.new(self, :Char),
+      Peg::Apply.new(self, :Char)
     )
   end
 
   def Range_multiple
     Peg::Seq.new(
-      self.Char,
+      Peg::Apply.new(self, :Char),
       Peg::Term.new("-"),
       Peg::Apply.new(self, :Char)
     )
@@ -211,7 +211,7 @@ class Peg::Parser < Peg
       Peg::Apply.new(self, :Char_tab),
       Peg::Apply.new(self, :Char_unicode),
       Peg::Apply.new(self, :Char_hex),
-      Peg::Apply.new(self, :Char_regular),
+      Peg::Apply.new(self, :Char_regular)
     )
   end
 
@@ -224,7 +224,7 @@ class Peg::Parser < Peg
   end
 
   def Char_singleQuote
-    Peg::Term.new("\\\'")
+    Peg::Term.new("\\'")
   end
 
   def Char_openSquare
