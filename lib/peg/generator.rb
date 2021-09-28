@@ -13,7 +13,7 @@ module Peg
     class Leaf
       def self.[](*attrs)
         Class.new(Leaf) do
-          attr_reader *attrs
+          attr_reader(*attrs)
 
           define_method :initialize do |*args|
             if args.size != attrs.size
