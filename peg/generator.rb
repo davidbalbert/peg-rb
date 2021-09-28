@@ -10,7 +10,73 @@ class Peg
   using Indentation
 
   module AST
-    Grammar = Struct.new(:rules) do
+    class Leaf
+      def self.[](*attrs)
+        Class.new(Leaf) do
+          attr_reader *attrs
+
+          define_method :initialize do |*args|
+            if args.size != attrs.size
+              raise ArgumentError, "wrong number of arguments (given #{args.size}, expected #{attrs.size})"
+            end
+
+            attrs.zip(args).each do |name, value|
+              instance_variable_set :"@#{name}", value
+            end
+          end
+        end
+      end
+
+      def children
+        []
+      end
+
+      def transform_children
+        self
+      end
+    end
+
+    class Unary
+      attr_reader :value
+
+      def self.[](attr)
+        Class.new(Unary) do
+          define_method attr do
+            @value
+          end
+        end
+      end
+
+      def initialize(value)
+        @value = value
+      end
+
+      def children
+        [value]
+      end
+
+      def transform_children
+        self.class.new(yield(value))
+      end
+    end
+
+    class NAry
+      attr_reader :children
+
+      def initialize(children)
+        @children = children
+      end
+
+      def transform_children
+        new_children = children.map { |c| yield(c) }
+
+        self.class.new(new_children)
+      end
+    end
+
+    class Grammar < NAry
+      alias rules children
+
       def to_rb
         <<~RUBY
           class G
@@ -24,7 +90,14 @@ class Peg
       end
     end
 
-    Rule = Struct.new(:name, :body) do
+    class Rule < Unary[:body]
+      attr_reader :name
+
+      def initialize(name, body)
+        super(body)
+        @name = name
+      end
+
       def to_rb
         <<~RUBY
           def #{name}
@@ -34,27 +107,44 @@ class Peg
       end
     end
 
-    Choice = Struct.new(:options) do
+    class Choice < NAry
       def to_rb
         <<~RUBY
           Peg::Choice.new(
-          #{options.map {|o| o.to_rb.indent(2)}.join(",\n")}
+          #{children.map {|o| o.to_rb.indent(2)}.join(",\n")}
           )
         RUBY
       end
     end
 
-    Seq = Struct.new(:exps) do
+    class NamedSeq < Unary[:seq]
+      attr_reader :name
+
+      def initialize(name, seq)
+        super(seq)
+        @name = name
+      end
+
+      def to_rb
+        Apply.new(name.to_sym).to_rb
+      end
+
+      def with_parent_name(parent_name)
+        NamedSeq.new(parent_name + "_" + name, seq)
+      end
+    end
+
+    class Seq < NAry
       def to_rb
         <<~RUBY
           Peg::Seq.new(
-          #{exps.map {|e| e.to_rb.indent(2)}.join(",\n")}
+          #{children.map {|e| e.to_rb.indent(2)}.join(",\n")}
           )
         RUBY
       end
     end
 
-    CharSet = Struct.new(:chars) do
+    class CharSet < Leaf[:chars]
       def to_rb
         <<~RUBY
           Peg::CharSet.new(#{chars.inspect})
@@ -62,7 +152,13 @@ class Peg
       end
     end
 
-    ZeroOrMore = Struct.new(:value) do
+    class ZeroOrMore < Unary[:value]
+      attr_reader :value
+
+      def initialize(value)
+        @value = value
+      end
+
       def to_rb
         <<~RUBY
           Peg::ZeroOrMore.new(
@@ -72,7 +168,7 @@ class Peg
       end
     end
 
-    OneOrMore = Struct.new(:value) do
+    class OneOrMore < Unary[:value]
       def to_rb
         <<~RUBY
           Peg::OneOrMore.new(
@@ -82,7 +178,7 @@ class Peg
       end
     end
 
-    Maybe = Struct.new(:value) do
+    class Maybe < Unary[:value]
       def to_rb
         <<~RUBY
           Peg::Maybe.new(
@@ -92,7 +188,7 @@ class Peg
       end
     end
 
-    class Any
+    class Any < Leaf
       def to_rb
         <<~RUBY
           Peg::Any.new
@@ -100,7 +196,7 @@ class Peg
       end
     end
 
-    class Never
+    class Never < Leaf
       def to_rb
         <<~RUBY
           Peg::Never.new
@@ -108,7 +204,7 @@ class Peg
       end
     end
 
-    And = Struct.new(:value) do
+    class And < Unary[:value]
       def to_rb
         <<~RUBY
           Peg::And.new(
@@ -118,8 +214,7 @@ class Peg
       end
     end
 
-
-    Not = Struct.new(:value) do
+    class Not < Unary[:value]
       def to_rb
         <<~RUBY
           Peg::Not.new(
@@ -129,7 +224,7 @@ class Peg
       end
     end
 
-    Apply = Struct.new(:rule) do
+    class Apply < Unary[:rule]
       def to_rb
         <<~RUBY
           Peg::Apply.new(self, :#{rule})
@@ -137,7 +232,7 @@ class Peg
       end
     end
 
-    Term = Struct.new(:value) do
+    class Term < Leaf[:value]
       def to_rb
         <<~RUBY
           Peg::Term.new(#{value.inspect})
@@ -148,32 +243,60 @@ class Peg
 
   class Generator
     def Grammar(spacing, rules, eof)
-      AST::Grammar.new(rules)
+      AST::Grammar.new(rules.flatten)
     end
 
-    def Definition(name, _, expression)
-      AST::Rule.new(name, expression)
-    end
+    def Definition(name, _, inline_rules)
+      body = inline_rules.transform_children do |s|
+        if s.respond_to?(:with_parent_name)
+          s.with_parent_name(name)
+        else
+          s
+        end
+      end
 
-    def Expression(choice, choices)
-      # choices: [('/', String)...]
+      new_rules = body.children.select {|s| s.is_a? AST::NamedSeq }.map do |ns|
+        AST::Rule.new(ns.name, ns.seq)
+      end
 
-      if choices.empty?
-        choice
+      unless new_rules.empty?
+        [AST::Rule.new(name, body), *new_rules]
       else
-        AST::Choice.new([choice, *choices.map {|(_, c)| c}])
+        AST::Rule.new(name, body)
       end
     end
 
-    def Choice(seq, rule_name)
-      # rule_name: ('--', String)?
-      if rule_name
-        rule_name = rule_name[1]
+    def InlineRules(named_seq, named_seqs)
+      # named_seqs: [('/', AST node)...]
+
+      if named_seqs.empty?
+        named_seq
+      else
+        AST::Choice.new([named_seq, *named_seqs.map {|(_, c)| c}])
+      end
+    end
+
+    def Expression(seq, seqs)
+      # seqs: [('/', AST node)...]
+
+      if seqs.empty?
+        seq
+      else
+        AST::Choice.new([seq, *seqs.map {|(_, c)| c}])
+      end
+    end
+
+    def NamedSequence(sequence, name)
+      # name: ('--', String)?
+      if name
+        name = name[1]
       end
 
-      # TODO: use rule_name
-
-      seq
+      if name
+        AST::NamedSeq.new(name, sequence)
+      else
+        sequence
+      end
     end
 
     def Sequence(prefixes)

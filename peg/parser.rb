@@ -17,23 +17,35 @@ class Peg::Parser < Peg
     Peg::Seq.new(
       Peg::Apply.new(self, :Identifier),
       Peg::Apply.new(self, :LEFTARROW),
-      Peg::Apply.new(self, :Expression)
+      Peg::Apply.new(self, :InlineRules)
+    )
+  end
+
+  def InlineRules
+    Peg::Seq.new(
+      Peg::Apply.new(self, :NamedSequence),
+      Peg::ZeroOrMore.new(
+        Peg::Seq.new(
+          Peg::Apply.new(self, :SLASH),
+          Peg::Apply.new(self, :NamedSequence)
+        )
+      )
     )
   end
 
   def Expression
     Peg::Seq.new(
-      Peg::Apply.new(self, :Choice),
+      Peg::Apply.new(self, :Sequence),
       Peg::ZeroOrMore.new(
         Peg::Seq.new(
           Peg::Apply.new(self, :SLASH),
-          Peg::Apply.new(self, :Choice)
+          Peg::Apply.new(self, :Sequence)
         ),
       ),
     )
   end
 
-  def Choice
+  def NamedSequence
     Peg::Seq.new(
       Peg::Apply.new(self, :Sequence),
       Peg::Maybe.new(
@@ -397,9 +409,10 @@ end
 Peg::META_GRAMMAR = <<-'END'
 Grammar         <- Spacing Definition+ EndOfFile
 
-Definition      <- Identifier LEFTARROW Expression
-Expression      <- Choice ( SLASH Choice )*
-Choice          <- Sequence ( DASHES Identifier )?
+Definition      <- Identifier LEFTARROW InlineRules
+InlineRules     <- NamedSequence ( SLASH NamedSequence )*
+Expression      <- Sequence ( SLASH Sequence )*
+NamedSequence   <- Sequence ( DASHES Identifier )?
 Sequence        <- Prefix*
 Prefix          <- ( AND / NOT )? Suffix
 Suffix          <- Primary ( QUERY / STAR / PLUS )?
