@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+
+$LOAD_PATH << File.expand_path("../lib", __dir__)
+require "peg"
+
+require "optparse"
+
+usage = "usage: #$0 [options] path/to/grammar.peg class_name"
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = usage
+
+  opts.on("-oOUTPUT", "--output=OUTPUT", "Write to a file") do |output|
+    options[:output] = output
+  end
+
+  opts.on("-h", "--help", "Prints this help") do
+    puts opts
+    exit
+  end
+end.parse!
+
+unless ARGV.size == 2
+  STDERR.puts usage
+  exit(1)
+end
+
+grammar = File.read(ARGV[0])
+class_name = ARGV[1]
+
+source = Peg::Parser.parse(grammar, actions: Peg::Generator.new(class_name)).value.to_rb
+
+if options[:output]
+  File.write(options[:output], source)
+else
+  puts source
+end

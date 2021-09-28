@@ -1,6 +1,6 @@
 require "rake/testtask"
 
-task default: :test
+task default: "lib/peg/parser.rb"
 
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"
@@ -8,15 +8,12 @@ Rake::TestTask.new(:test) do |t|
   t.test_files = FileList["test/**/*_test.rb"]
 end
 
-desc "Generate the parser"
+desc "Compile lib/peg/parser.rb from lib/peg/meta_grammar.peg"
 file "lib/peg/parser.rb" => ["lib/peg/meta_grammar.peg", "lib/peg/generator.rb"] do
-  require "bundler/setup"
+  xsystem("exe/peg lib/peg/meta_grammar.peg Peg::Parser -o lib/peg/parser.rb")
+end
 
-  $LOAD_PATH << File.expand_path("./lib", __dir__)
-  require "peg"
-
-  meta_grammar = File.read("lib/peg/meta_grammar.peg")
-  source = Peg::Parser.parse(meta_grammar, actions: Peg::Generator.new("Peg::Parser")).value.to_rb
-
-  File.write("lib/peg/parser.rb", source)
+def xsystem(cmd)
+  puts cmd
+  system cmd
 end
