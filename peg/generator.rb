@@ -1,10 +1,14 @@
-class String
-  def indent(n)
-    split("\n").map { |l| " "*n + l }.join("\n")
-  end
-end
-
 class Peg
+  module Indentation
+    refine String do
+      def indent(n)
+        split("\n").map { |l| " "*n + l }.join("\n")
+      end
+    end
+  end
+
+  using Indentation
+
   module AST
     Grammar = Struct.new(:rules) do
       def to_rb
