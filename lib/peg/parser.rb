@@ -139,29 +139,29 @@ class Peg::Parser < Peg::Grammar
   def Literal
     Peg::Choice.new(
       Peg::Seq.new(
-        Peg::Term.new("'"),
+        Peg::CharSet.new("'"),
         Peg::ZeroOrMore.new(
           Peg::Seq.new(
             Peg::Not.new(
-              Peg::Term.new("'")
+              Peg::CharSet.new("'")
             ),
             Peg::Apply.new(self, :Char)
           )
         ),
-        Peg::Term.new("'"),
+        Peg::CharSet.new("'"),
         Peg::Apply.new(self, :Spacing)
       ),
       Peg::Seq.new(
-        Peg::Term.new('"'),
+        Peg::CharSet.new("\""),
         Peg::ZeroOrMore.new(
           Peg::Seq.new(
             Peg::Not.new(
-              Peg::Term.new('"')
+              Peg::CharSet.new("\"")
             ),
             Peg::Apply.new(self, :Char)
           )
         ),
-        Peg::Term.new('"'),
+        Peg::CharSet.new("\""),
         Peg::Apply.new(self, :Spacing)
       )
     )
@@ -354,7 +354,7 @@ class Peg::Parser < Peg::Grammar
 
   def DASHES
     Peg::Seq.new(
-      Peg::Term.new('--'),
+      Peg::Term.new("--"),
       Peg::Apply.new(self, :Spacing)
     )
   end
