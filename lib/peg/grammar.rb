@@ -2,8 +2,8 @@ module Peg
   class Grammar
     attr_reader :actions
 
-    def self.match?(input)
-      new.match?(input)
+    def self.match?(input, rule: :root)
+      new.match?(input, rule: rule)
     end
 
     def self.parse(input, actions: nil, rule: :root)
@@ -14,11 +14,11 @@ module Peg
       @actions = actions
     end
 
-    def match?(input)
-      parse(input).success?
+    def match?(input, rule: :root)
+      parse(input, rule: rule).success?
     end
 
-    def parse(input, rule:)
+    def parse(input, rule: :root)
       Apply.new(self, rule).parse(input)
     end
   end

@@ -1,18 +1,10 @@
-require './peg'
-
-require 'minitest/autorun'
-
-class Test < MiniTest::Test
-  def self.test(name, &block)
-    define_method "test_#{name.gsub(/\s/, '_')}", &block
-  end
-end
+require "test_helper"
 
 # words <- (word space)* word
 # word  <- [a-z]+
 # space  <- (" " / "\t")+
 
-class Words < Peg
+class Words < Peg::Grammar
   def root
     Peg::Apply.new(self, :words)
   end
@@ -57,7 +49,7 @@ end
 # space           <- " " / "\t"
 # eof             <- !.
 
-class Calc < Peg
+class Calc < Peg::Grammar
   def root
     Peg::Seq.new(
       Peg::ZeroOrMore.new(Peg::Apply.new(self, :space)),
@@ -128,7 +120,7 @@ end
 
 # root <- "foo" &" bar"
 
-class And < Peg
+class And < Peg::Grammar
   def root
     Peg::Seq.new(
       Peg::Term.new("foo"),
