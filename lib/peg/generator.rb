@@ -75,11 +75,18 @@ module Peg
     end
 
     class Grammar < NAry
+      attr_reader :class_name
+
+      def initialize(class_name, children)
+        super(children)
+        @class_name = class_name
+      end
+
       alias rules children
 
       def to_rb
         <<~RUBY
-          class G
+          class #{class_name} < Peg::Grammar
             def root
               Peg::Apply.new(self, :#{rules.first.name})
             end
@@ -242,8 +249,14 @@ module Peg
   end
 
   class Generator
+    attr_reader :class_name
+
+    def initialize(class_name)
+      @class_name = class_name
+    end
+
     def Grammar(spacing, rules, eof)
-      AST::Grammar.new(rules.flatten)
+      AST::Grammar.new(class_name, rules.flatten)
     end
 
     def Definition(name, _, inline_rules)
