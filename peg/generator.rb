@@ -1,3 +1,9 @@
+class String
+  def indent(n)
+    split("\n").map { |l| " "*n + l }.join("\n")
+  end
+end
+
 class Peg
   module AST
     Grammar = Struct.new(:rules) do
@@ -8,7 +14,7 @@ class Peg
               Peg::Apply.new(self, :#{rules.first.name})
             end
 
-            #{rules.map {|r| r.to_rb}.join("\n\n")}
+          #{rules.map {|r| r.to_rb.indent(2)}.join("\n\n")}
           end
         RUBY
       end
@@ -18,7 +24,7 @@ class Peg
       def to_rb
         <<~RUBY
           def #{name}
-            #{body.to_rb}
+          #{body.to_rb.indent(2)}
           end
         RUBY
       end
@@ -28,7 +34,7 @@ class Peg
       def to_rb
         <<~RUBY
           Peg::Choice.new(
-            #{options.map {|o| o.to_rb}.join(",\n")}
+          #{options.map {|o| o.to_rb.indent(2)}.join(",\n")}
           )
         RUBY
       end
@@ -38,7 +44,7 @@ class Peg
       def to_rb
         <<~RUBY
           Peg::Seq.new(
-            #{exps.map {|e| e.to_rb}.join(",\n")}
+          #{exps.map {|e| e.to_rb.indent(2)}.join(",\n")}
           )
         RUBY
       end
@@ -56,7 +62,7 @@ class Peg
       def to_rb
         <<~RUBY
           Peg::ZeroOrMore.new(
-            #{value.to_rb}
+          #{value.to_rb.indent(2)}
           )
         RUBY
       end
@@ -66,7 +72,7 @@ class Peg
       def to_rb
         <<~RUBY
           Peg::OneOrMore.new(
-            #{value.to_rb}
+          #{value.to_rb.indent(2)}
           )
         RUBY
       end
@@ -76,7 +82,7 @@ class Peg
       def to_rb
         <<~RUBY
           Peg::Maybe.new(
-            #{value.to_rb}
+          #{value.to_rb.indent(2)}
           )
         RUBY
       end
@@ -102,7 +108,7 @@ class Peg
       def to_rb
         <<~RUBY
           Peg::And.new(
-            #{value.to_rb}
+          #{value.to_rb.indent(2)}
           )
         RUBY
       end
@@ -113,7 +119,7 @@ class Peg
       def to_rb
         <<~RUBY
           Peg::Not.new(
-            #{value.to_rb}
+          #{value.to_rb.indent(2)}
           )
         RUBY
       end
