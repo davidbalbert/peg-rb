@@ -1,4 +1,4 @@
-class Peg
+module Peg
   module Indentation
     refine String do
       def indent(n)

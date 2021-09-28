@@ -1,4 +1,4 @@
-class Peg::Parser < Peg
+class Peg::Parser < Peg::Grammar
   def root
     Peg::Apply.new(self, :Grammar)
   end

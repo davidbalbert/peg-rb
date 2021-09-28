@@ -1,48 +1,4 @@
-class Peg
-  module ModuleAttribute
-    refine Module do
-      def module_attribute(name, default: nil)
-        define_singleton_method name do
-          instance_variable_get "@#{name}"
-        end
-
-        define_singleton_method "#{name}=" do |new_value|
-          instance_variable_set "@#{name}", new_value
-        end
-
-        if default != nil
-          instance_variable_set "@#{name}", default
-        end
-      end
-    end
-  end
-
-  using ModuleAttribute
-
-  module_attribute :debug, default: false
-
-  attr_reader :actions
-
-  def self.match?(input)
-    new.match?(input)
-  end
-
-  def self.parse(input, actions: nil, rule: :root)
-    new(actions).parse(input, rule: rule)
-  end
-
-  def initialize(actions=nil)
-    @actions = actions
-  end
-
-  def match?(input)
-    parse(input).success?
-  end
-
-  def parse(input, rule:)
-    Apply.new(self, rule).parse(input)
-  end
-
+module Peg
   Success = Struct.new(:value, :nchars) do
     def success?
       true
@@ -342,4 +298,3 @@ class Peg
     end
   end
 end
-

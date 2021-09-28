@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+
+class Loader
+  def self.loaders
+    @loaders ||= []
+  end
+
+  attr_reader :lib, :dir
+
+  def initialize(lib, dir)
+    @lib, @dir = lib, dir
+    $LOAD_PATH.unshift(dir)
+
+    self.class.loaders << self
+  end
+
+  def reload
+    $LOADED_FEATURES.reject! { |s| s.start_with? dir }
+    Object.send(:remove_const, lib.capitalize.to_sym)
+
+    load
+  end
+
+  def load
+    require lib
+  end
+end
+
+lib = File.expand_path("../lib", __dir__)
+loader = Loader.new('peg', lib)
+loader.load
+
+define_method :reload! do
+  loader.reload
+end
+
+require "pry"
+Pry.start
