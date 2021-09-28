@@ -24,5 +24,6 @@ end
 
 require 'peg/runtime'
 require 'peg/grammar'
+require 'peg/meta_grammar'
 require 'peg/parser'
 require 'peg/generator'

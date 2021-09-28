@@ -1,7 +1,5 @@
 module Peg
   class Grammar
-    attr_reader :actions
-
     def self.match?(input, rule: :root)
       new.match?(input, rule: rule)
     end
@@ -9,6 +7,9 @@ module Peg
     def self.parse(input, actions: nil, rule: :root)
       new(actions).parse(input, rule: rule)
     end
+
+
+    attr_reader :actions
 
     def initialize(actions=nil)
       @actions = actions
