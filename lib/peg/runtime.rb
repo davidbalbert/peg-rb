@@ -1,5 +1,15 @@
 module Peg
-  Success = Struct.new(:value, :nchars) do
+  class Node
+    attr_reader :type, :children, :source_string
+
+    def initialize(type, children, source_string)
+      @type = type
+      @children = children
+      @source_string = source_string
+    end
+  end
+
+  Success = Struct.new(:parse_tree, :nchars) do
     def success?
       true
     end
