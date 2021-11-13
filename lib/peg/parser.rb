@@ -1,33 +1,31 @@
 class Peg::Parser < Peg::Grammar
-  def root
-    Peg::Apply.new(self, :Grammar)
-  end
+  self.default_rule = :Grammar
 
   def Grammar
     Peg::Seq.new(
-      Peg::Apply.new(self, :Spacing),
+      Peg::Apply.new(:Spacing),
       Peg::OneOrMore.new(
-        Peg::Apply.new(self, :Definition)
+        Peg::Apply.new(:Definition)
       ),
-      Peg::Apply.new(self, :EndOfFile)
+      Peg::Apply.new(:EndOfFile)
     )
   end
 
   def Definition
     Peg::Seq.new(
-      Peg::Apply.new(self, :Identifier),
-      Peg::Apply.new(self, :LEFTARROW),
-      Peg::Apply.new(self, :InlineRules)
+      Peg::Apply.new(:Identifier),
+      Peg::Apply.new(:LEFTARROW),
+      Peg::Apply.new(:InlineRules)
     )
   end
 
   def InlineRules
     Peg::Seq.new(
-      Peg::Apply.new(self, :NamedSequence),
+      Peg::Apply.new(:NamedSequence),
       Peg::ZeroOrMore.new(
         Peg::Seq.new(
-          Peg::Apply.new(self, :SLASH),
-          Peg::Apply.new(self, :NamedSequence)
+          Peg::Apply.new(:SLASH),
+          Peg::Apply.new(:NamedSequence)
         )
       )
     )
@@ -35,93 +33,123 @@ class Peg::Parser < Peg::Grammar
 
   def Expression
     Peg::Seq.new(
-      Peg::Apply.new(self, :Sequence),
+      Peg::Apply.new(:Sequence),
       Peg::ZeroOrMore.new(
         Peg::Seq.new(
-          Peg::Apply.new(self, :SLASH),
-          Peg::Apply.new(self, :Sequence)
+          Peg::Apply.new(:SLASH),
+          Peg::Apply.new(:Sequence)
         )
       )
     )
   end
 
   def NamedSequence
+    Peg::Choice.new(
+      Peg::Apply.new(:NamedSequence_inline),
+      Peg::Apply.new(:Sequence)
+    )
+  end
+
+  def NamedSequence_inline
     Peg::Seq.new(
-      Peg::Apply.new(self, :Sequence),
-      Peg::Maybe.new(
-        Peg::Seq.new(
-          Peg::Apply.new(self, :DASHES),
-          Peg::Apply.new(self, :Identifier)
-        )
-      )
+      Peg::Apply.new(:Sequence),
+      Peg::Apply.new(:DASHES),
+      Peg::Apply.new(:Identifier)
     )
   end
 
   def Sequence
-    Peg::ZeroOrMore.new(
-      Peg::Apply.new(self, :Prefix)
+    Peg::OneOrMore.new(
+      Peg::Apply.new(:Prefix)
     )
   end
 
   def Prefix
+    Peg::Choice.new(
+      Peg::Apply.new(:Prefix_and),
+      Peg::Apply.new(:Prefix_not),
+      Peg::Apply.new(:Suffix)
+    )
+  end
+
+  def Prefix_and
     Peg::Seq.new(
-      Peg::Maybe.new(
-        Peg::Choice.new(
-          Peg::Apply.new(self, :AND),
-          Peg::Apply.new(self, :NOT)
-        )
-      ),
-      Peg::Apply.new(self, :Suffix)
+      Peg::Apply.new(:AND),
+      Peg::Apply.new(:Suffix)
+    )
+  end
+
+  def Prefix_not
+    Peg::Seq.new(
+      Peg::Apply.new(:NOT),
+      Peg::Apply.new(:Suffix)
     )
   end
 
   def Suffix
+    Peg::Choice.new(
+      Peg::Apply.new(:Suffix_maybe),
+      Peg::Apply.new(:Suffix_star),
+      Peg::Apply.new(:Suffix_plus),
+      Peg::Apply.new(:Primary)
+    )
+  end
+
+  def Suffix_maybe
     Peg::Seq.new(
-      Peg::Apply.new(self, :Primary),
-      Peg::Maybe.new(
-        Peg::Choice.new(
-          Peg::Apply.new(self, :QUERY),
-          Peg::Apply.new(self, :STAR),
-          Peg::Apply.new(self, :PLUS)
-        )
-      )
+      Peg::Apply.new(:Primary),
+      Peg::Apply.new(:QUERY)
+    )
+  end
+
+  def Suffix_star
+    Peg::Seq.new(
+      Peg::Apply.new(:Primary),
+      Peg::Apply.new(:STAR)
+    )
+  end
+
+  def Suffix_plus
+    Peg::Seq.new(
+      Peg::Apply.new(:Primary),
+      Peg::Apply.new(:PLUS)
     )
   end
 
   def Primary
     Peg::Choice.new(
-      Peg::Apply.new(self, :Primary_identifier),
-      Peg::Apply.new(self, :Primary_group),
-      Peg::Apply.new(self, :Literal),
-      Peg::Apply.new(self, :Class),
-      Peg::Apply.new(self, :DOT)
+      Peg::Apply.new(:Primary_identifier),
+      Peg::Apply.new(:Primary_group),
+      Peg::Apply.new(:Literal),
+      Peg::Apply.new(:Class),
+      Peg::Apply.new(:DOT)
     )
   end
 
   def Primary_identifier
     Peg::Seq.new(
-      Peg::Apply.new(self, :Identifier),
+      Peg::Apply.new(:Identifier),
       Peg::Not.new(
-        Peg::Apply.new(self, :LEFTARROW)
+        Peg::Apply.new(:LEFTARROW)
       )
     )
   end
 
   def Primary_group
     Peg::Seq.new(
-      Peg::Apply.new(self, :OPEN),
-      Peg::Apply.new(self, :Expression),
-      Peg::Apply.new(self, :CLOSE)
+      Peg::Apply.new(:OPEN),
+      Peg::Apply.new(:Expression),
+      Peg::Apply.new(:CLOSE)
     )
   end
 
   def Identifier
     Peg::Seq.new(
-      Peg::Apply.new(self, :IdentStart),
+      Peg::Apply.new(:IdentStart),
       Peg::ZeroOrMore.new(
-        Peg::Apply.new(self, :IdentCont)
+        Peg::Apply.new(:IdentCont)
       ),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
@@ -131,7 +159,7 @@ class Peg::Parser < Peg::Grammar
 
   def IdentCont
     Peg::Choice.new(
-      Peg::Apply.new(self, :IdentStart),
+      Peg::Apply.new(:IdentStart),
       Peg::CharSet.new("0123456789")
     )
   end
@@ -145,11 +173,11 @@ class Peg::Parser < Peg::Grammar
             Peg::Not.new(
               Peg::CharSet.new("'")
             ),
-            Peg::Apply.new(self, :Char)
+            Peg::Apply.new(:Char)
           )
         ),
         Peg::CharSet.new("'"),
-        Peg::Apply.new(self, :Spacing)
+        Peg::Apply.new(:Spacing)
       ),
       Peg::Seq.new(
         Peg::CharSet.new("\""),
@@ -158,11 +186,11 @@ class Peg::Parser < Peg::Grammar
             Peg::Not.new(
               Peg::CharSet.new("\"")
             ),
-            Peg::Apply.new(self, :Char)
+            Peg::Apply.new(:Char)
           )
         ),
         Peg::CharSet.new("\""),
-        Peg::Apply.new(self, :Spacing)
+        Peg::Apply.new(:Spacing)
       )
     )
   end
@@ -175,43 +203,43 @@ class Peg::Parser < Peg::Grammar
           Peg::Not.new(
             Peg::Term.new("]")
           ),
-          Peg::Apply.new(self, :Range)
+          Peg::Apply.new(:Range)
         )
       ),
       Peg::Term.new("]"),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def Range
     Peg::Choice.new(
-      Peg::Apply.new(self, :Range_multiple),
-      Peg::Apply.new(self, :Char)
+      Peg::Apply.new(:Range_multiple),
+      Peg::Apply.new(:Char)
     )
   end
 
   def Range_multiple
     Peg::Seq.new(
-      Peg::Apply.new(self, :Char),
+      Peg::Apply.new(:Char),
       Peg::Term.new("-"),
-      Peg::Apply.new(self, :Char)
+      Peg::Apply.new(:Char)
     )
   end
 
   def Char
     Peg::Choice.new(
-      Peg::Apply.new(self, :Char_backslash),
-      Peg::Apply.new(self, :Char_doubleQuote),
-      Peg::Apply.new(self, :Char_singleQuote),
-      Peg::Apply.new(self, :Char_openSquare),
-      Peg::Apply.new(self, :Char_closeSquare),
-      Peg::Apply.new(self, :Char_backspace),
-      Peg::Apply.new(self, :Char_newline),
-      Peg::Apply.new(self, :Char_carriageReturn),
-      Peg::Apply.new(self, :Char_tab),
-      Peg::Apply.new(self, :Char_unicode),
-      Peg::Apply.new(self, :Char_hex),
-      Peg::Apply.new(self, :Char_regular)
+      Peg::Apply.new(:Char_backslash),
+      Peg::Apply.new(:Char_doubleQuote),
+      Peg::Apply.new(:Char_singleQuote),
+      Peg::Apply.new(:Char_openSquare),
+      Peg::Apply.new(:Char_closeSquare),
+      Peg::Apply.new(:Char_backspace),
+      Peg::Apply.new(:Char_newline),
+      Peg::Apply.new(:Char_carriageReturn),
+      Peg::Apply.new(:Char_tab),
+      Peg::Apply.new(:Char_unicode),
+      Peg::Apply.new(:Char_hex),
+      Peg::Apply.new(:Char_regular)
     )
   end
 
@@ -254,18 +282,18 @@ class Peg::Parser < Peg::Grammar
   def Char_unicode
     Peg::Seq.new(
       Peg::Term.new("\\u"),
-      Peg::Apply.new(self, :Hex),
-      Peg::Apply.new(self, :Hex),
-      Peg::Apply.new(self, :Hex),
-      Peg::Apply.new(self, :Hex)
+      Peg::Apply.new(:Hex),
+      Peg::Apply.new(:Hex),
+      Peg::Apply.new(:Hex),
+      Peg::Apply.new(:Hex)
     )
   end
 
   def Char_hex
     Peg::Seq.new(
       Peg::Term.new("\\x"),
-      Peg::Apply.new(self, :Hex),
-      Peg::Apply.new(self, :Hex)
+      Peg::Apply.new(:Hex),
+      Peg::Apply.new(:Hex)
     )
   end
 
@@ -285,85 +313,85 @@ class Peg::Parser < Peg::Grammar
   def LEFTARROW
     Peg::Seq.new(
       Peg::Term.new("<-"),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def SLASH
     Peg::Seq.new(
       Peg::Term.new("/"),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def AND
     Peg::Seq.new(
       Peg::Term.new("&"),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def NOT
     Peg::Seq.new(
       Peg::Term.new("!"),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def QUERY
     Peg::Seq.new(
       Peg::Term.new("?"),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def STAR
     Peg::Seq.new(
       Peg::Term.new("*"),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def PLUS
     Peg::Seq.new(
       Peg::Term.new("+"),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def OPEN
     Peg::Seq.new(
       Peg::Term.new("("),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def CLOSE
     Peg::Seq.new(
       Peg::Term.new(")"),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def DOT
     Peg::Seq.new(
       Peg::Term.new("."),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def DASHES
     Peg::Seq.new(
       Peg::Term.new("--"),
-      Peg::Apply.new(self, :Spacing)
+      Peg::Apply.new(:Spacing)
     )
   end
 
   def Spacing
     Peg::ZeroOrMore.new(
       Peg::Choice.new(
-        Peg::Apply.new(self, :Space),
-        Peg::Apply.new(self, :Comment)
+        Peg::Apply.new(:Space),
+        Peg::Apply.new(:Comment)
       )
     )
   end
@@ -374,12 +402,12 @@ class Peg::Parser < Peg::Grammar
       Peg::ZeroOrMore.new(
         Peg::Seq.new(
           Peg::Not.new(
-            Peg::Apply.new(self, :EndOfLine)
+            Peg::Apply.new(:EndOfLine)
           ),
           Peg::Any.new
         )
       ),
-      Peg::Apply.new(self, :EndOfLine)
+      Peg::Apply.new(:EndOfLine)
     )
   end
 
@@ -387,7 +415,7 @@ class Peg::Parser < Peg::Grammar
     Peg::Choice.new(
       Peg::Term.new(" "),
       Peg::Term.new("\t"),
-      Peg::Apply.new(self, :EndOfLine)
+      Peg::Apply.new(:EndOfLine)
     )
   end
 

@@ -23,6 +23,18 @@ module Peg
     def enumerable?
       false
     end
+
+    def pretty_print(pp)
+      pp.text "(#{name}"
+
+      pp.nest(2) do
+        children.each do |c|
+          pp.breakable
+          pp.pp(c)
+        end
+      end
+      pp.text ")"
+    end
   end
 
   class TerminalNode
@@ -56,6 +68,12 @@ module Peg
     def enumerable?
       false
     end
+
+    def pretty_print(pp)
+      pp.text "(_terminal "
+      pp.pp(value)
+      pp.text ")"
+    end
   end
 
   class IterationNode
@@ -84,6 +102,18 @@ module Peg
 
     def enumerable?
       true
+    end
+
+    def pretty_print(pp)
+      pp.text "(#{name}"
+
+      pp.nest(2) do
+        children.each do |c|
+          pp.breakable
+          pp.pp(c)
+        end
+      end
+      pp.text ")"
     end
   end
 
@@ -114,7 +144,7 @@ module Peg
       @value = value
     end
 
-    def parse(input)
+    def parse(grammar, input)
       if input.start_with?(value)
         Success.new(TerminalNode.new(value), value.size)
       else
@@ -130,11 +160,11 @@ module Peg
       @values = values
     end
 
-    def parse(input)
+    def parse(grammar, input)
       res = Success.new([], 0)
 
       values.each do |v|
-        r = v.parse(input)
+        r = v.parse(grammar, input)
 
         return Failure.new unless r.success?
 
@@ -154,9 +184,9 @@ module Peg
       @options = options
     end
 
-    def parse(input)
+    def parse(grammar, input)
       options.each do |opt|
-        if (res = opt.parse(input)).success?
+        if (res = opt.parse(grammar, input)).success?
           return res
         end
       end
@@ -172,7 +202,7 @@ module Peg
       @chars = chars
     end
 
-    def parse(input)
+    def parse(grammar, input)
       return Failure.new if input.empty?
 
       if chars.include?(input[0])
@@ -190,11 +220,11 @@ module Peg
       @value = value
     end
 
-    def parse(input)
+    def parse(grammar, input)
       res = Success.new(IterationNode.new, 0)
 
       loop do
-        r = value.parse(input)
+        r = value.parse(grammar, input)
 
         return res unless r.success?
 
@@ -213,11 +243,11 @@ module Peg
       @value = value
     end
 
-    def parse(input)
+    def parse(grammar, input)
       res = Failure.new
 
       loop do
-        r = value.parse(input)
+        r = value.parse(grammar, input)
 
         return res unless r.success?
 
@@ -237,10 +267,10 @@ module Peg
       @value = value
     end
 
-    def parse(input)
+    def parse(grammar, input)
       res = Success.new(IterationNode.new, 0)
 
-      if (r = value.parse(input)).success?
+      if (r = value.parse(grammar, input)).success?
         res.parse_tree.children.concat Array(r.parse_tree)
         res.parse_tree.source_string << Array(r.parse_tree).map(&:source_string).join
         res.nchars += r.nchars
@@ -251,7 +281,7 @@ module Peg
   end
 
   class Any
-    def parse(input)
+    def parse(grammar, input)
       if input.size > 0
         Success.new(TerminalNode.new(input[0]), 1)
       else
@@ -263,7 +293,7 @@ module Peg
   # Is this the right thing to do for empty
   # rules? I'm not sure.
   class Never
-    def parse(input)
+    def parse(grammar, input)
       Failure.new
     end
   end
@@ -275,8 +305,8 @@ module Peg
       @value = value
     end
 
-    def parse(input)
-      res = value.parse(input)
+    def parse(grammar, input)
+      res = value.parse(grammar, input)
 
       if res.success?
         Success.new(nil, 0)
@@ -293,8 +323,8 @@ module Peg
       @value = value
     end
 
-    def parse(input)
-      res = value.parse(input)
+    def parse(grammar, input)
+      res = value.parse(grammar, input)
 
       if res.success?
         Failure.new
@@ -307,17 +337,16 @@ module Peg
   class Apply
     @@indent = 0
 
-    attr_reader :grammar, :rule
+    attr_reader :rule
 
-    def initialize(grammar, rule)
-      @grammar = grammar
+    def initialize(rule)
       @rule = rule
     end
 
-    def parse(input)
+    def parse(grammar, input)
       debug(input) do
         body = grammar.send(rule)
-        res = body.parse(input)
+        res = body.parse(grammar, input)
 
         return res if res.fail?
 

@@ -1,23 +1,27 @@
 module Peg
   class Grammar
-    def self.match?(input, rule: :root)
-      new.match?(input, rule: rule)
+    using ModuleAttribute
+
+    module_attribute :default_rule
+
+    def self.match?(input, rule: nil)
+      new.match?(input, rule: rule || default_rule)
     end
 
-    def self.parse(input, rule: :root)
-      new.parse(input, rule: rule)
+    def self.parse(input, rule: nil)
+      new.parse(input, rule: rule || default_rule)
     end
-    
+
     def self.create_semantics
       Semantics.new(self)
     end
 
-    def match?(input, rule: :root)
+    def match?(input, rule:)
       parse(input, rule: rule).success?
     end
 
-    def parse(input, rule: :root)
-      Apply.new(self, rule).parse(input)
+    def parse(input, rule:)
+      Apply.new(rule).parse(self, input)
     end
   end
 end

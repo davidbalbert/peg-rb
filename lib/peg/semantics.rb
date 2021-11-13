@@ -52,20 +52,31 @@ module Peg
 
       wrapper.class_eval <<~RUBY
       def #{name}(#{args.join(', ')})
+        puts "== " + name.to_s
+
         #{args.empty? ? "" : args.map { "@#{_1}" }.join(', ') + " = " + args.join(', ')}
 
-        action = _semantics.operations[:#{name}].instance_method(name)&.bind(self)
-        nonterminal_action = _semantics.operations[:#{name}].instance_method("_nonterminal")&.bind(self)
+        if _semantics.operations[:#{name}].method_defined?(name)
+          action = _semantics.operations[:#{name}].instance_method(name).bind(self)
+        end
+
+        if _semantics.operations[:#{name}].method_defined?("_nonterminal")
+          nonterminal_action = _semantics.operations[:#{name}].instance_method("_nonterminal").bind(self)
+        end
 
         if !action && nonterminal? && arity == 1
-          action = ->(child) { child.send(#{(["name"] + args).join(", ")}) }
+          action = ->(child) { child.#{name}(#{args.join(", ")}) }
         elsif !action && nonterminal? && nonterminal_action
           action = nonterminal_action
         elsif !action
           raise "#{name}: missing semantics for " + name # todo, figure out what type of error this should be
         end
 
-        action.call(*children)
+        if enumerable?
+          action.call(children)
+        else
+          action.call(*children)
+        end
       end
       RUBY
 

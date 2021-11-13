@@ -3,10 +3,16 @@ Grammar         <- Spacing Definition+ EndOfFile
 Definition      <- Identifier LEFTARROW InlineRules
 InlineRules     <- NamedSequence ( SLASH NamedSequence )*
 Expression      <- Sequence ( SLASH Sequence )*
-NamedSequence   <- Sequence ( DASHES Identifier )?
+NamedSequence   <- Sequence DASHES Identifier -- inline
+                 / Sequence
 Sequence        <- Prefix*
-Prefix          <- ( AND / NOT )? Suffix
-Suffix          <- Primary ( QUERY / STAR / PLUS )?
+Prefix          <- AND Suffix -- and
+                 / NOT Suffix -- not
+                 / Suffix
+Suffix          <- Primary QUERY -- maybe
+                 / Primary STAR  -- star
+                 / Primary PLUS  -- plus
+                 / Primary
 Primary         <- Identifier !LEFTARROW -- identifier
                  / OPEN Expression CLOSE -- group
                  / Literal
