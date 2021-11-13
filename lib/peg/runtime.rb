@@ -1,11 +1,89 @@
 module Peg
-  class Node
-    attr_reader :type, :children, :source_string
+  class NonterminalNode
+    attr_reader :name, :children, :source_string
 
-    def initialize(type, children, source_string)
-      @type = type
+    def initialize(name, children)
+      @name = name
       @children = children
-      @source_string = source_string
+      @source_string = children.map(&:source_string).join
+    end
+
+    def arity
+      children.size
+    end
+
+    def terminal?
+      false
+    end
+
+    def nonterminal?
+      true
+    end
+
+    def enumerable?
+      false
+    end
+  end
+
+  class TerminalNode
+    attr_reader :value
+    alias source_string value
+
+    def initialize(value)
+      @value = value
+    end
+
+    def name
+      "_terminal"
+    end
+
+    def children
+      []
+    end
+
+    def arity
+      1
+    end
+
+    def terminal?
+      true
+    end
+
+    def nonterminal?
+      false
+    end
+
+    def enumerable?
+      false
+    end
+  end
+
+  class IterationNode
+    attr_reader :children, :source_string
+
+    def initialize
+      @children = []
+      @source_string = ""
+    end
+
+    def arity
+      children.size
+    end
+
+    def name
+      "_iter"
+    end
+
+    def terminal?
+      false
+    end
+
+    def nonterminal?
+      false
+    end
+
+    def enumerable?
+      true
     end
   end
 
@@ -38,14 +116,10 @@ module Peg
 
     def parse(input)
       if input.start_with?(value)
-        Success.new(value, value.size)
+        Success.new(TerminalNode.new(value), value.size)
       else
         Failure.new
       end
-    end
-
-    def enumerable?
-      false
     end
   end
 
@@ -64,16 +138,12 @@ module Peg
 
         return Failure.new unless r.success?
 
-        res.value << r.value
+        res.parse_tree.concat Array(r.parse_tree)
         res.nchars += r.nchars
         input = input[r.nchars..]
       end
 
       res
-    end
-
-    def enumerable?
-      false
     end
   end
 
@@ -93,10 +163,6 @@ module Peg
 
       Failure.new
     end
-
-    def enumerable?
-      false
-    end
   end
 
   class CharSet
@@ -110,14 +176,10 @@ module Peg
       return Failure.new if input.empty?
 
       if chars.include?(input[0])
-        Success.new(input[0], 1)
+        Success.new(TerminalNode.new(input[0]), 1)
       else
         Failure.new
       end
-    end
-
-    def enumerable?
-      false
     end
   end
 
@@ -129,21 +191,18 @@ module Peg
     end
 
     def parse(input)
-      res = Success.new([], 0)
+      res = Success.new(IterationNode.new, 0)
 
       loop do
         r = value.parse(input)
 
         return res unless r.success?
 
-        res.value << r.value
+        res.parse_tree.children.concat Array(r.parse_tree)
+        res.parse_tree.source_string << Array(r.parse_tree).map(&:source_string).join
         res.nchars += r.nchars
         input = input[r.nchars..]
       end
-    end
-
-    def enumerable?
-      true
     end
   end
 
@@ -162,15 +221,12 @@ module Peg
 
         return res unless r.success?
 
-        res = Success.new([], 0) if res.fail?
-        res.value << r.value
+        res = Success.new(IterationNode.new, 0) if res.fail?
+        res.parse_tree.children.concat Array(r.parse_tree)
+        res.parse_tree.source_string << Array(r.parse_tree).map(&:source_string).join
         res.nchars += r.nchars
         input = input[r.nchars..]
       end
-    end
-
-    def enumerable?
-      true
     end
   end
 
@@ -182,29 +238,25 @@ module Peg
     end
 
     def parse(input)
-      if (res = value.parse(input)).success?
-        res
-      else
-        Success.new(nil, 0)
-      end
-    end
+      res = Success.new(IterationNode.new, 0)
 
-    def enumerable?
-      false
+      if (r = value.parse(input)).success?
+        res.parse_tree.children.concat Array(r.parse_tree)
+        res.parse_tree.source_string << Array(r.parse_tree).map(&:source_string).join
+        res.nchars += r.nchars
+      end
+
+      res
     end
   end
 
   class Any
     def parse(input)
       if input.size > 0
-        Success.new(input[0], 1)
+        Success.new(TerminalNode.new(input[0]), 1)
       else
         Failure.new
       end
-    end
-
-    def enumerable?
-      false
     end
   end
 
@@ -213,10 +265,6 @@ module Peg
   class Never
     def parse(input)
       Failure.new
-    end
-
-    def enumerable?
-      false
     end
   end
 
@@ -236,10 +284,6 @@ module Peg
         Failure.new
       end
     end
-
-    def enumerable?
-      false
-    end
   end
 
   class Not
@@ -258,10 +302,6 @@ module Peg
         Success.new(nil, 0)
       end
     end
-
-    def enumerable?
-      false
-    end
   end
 
   class Apply
@@ -279,20 +319,10 @@ module Peg
         body = grammar.send(rule)
         res = body.parse(input)
 
-        if res.success? && grammar.actions&.respond_to?(rule)
-          if body.enumerable?
-            res.value = grammar.actions.send(rule, res.value)
-          else
-            res.value = grammar.actions.send(rule, *Array(res.value))
-          end
-        end
+        return res if res.fail?
 
-        res
+        Success.new(NonterminalNode.new(rule, Array(res.parse_tree)), res.nchars)
       end
-    end
-
-    def enumerable?
-      false
     end
 
     def debug(input)

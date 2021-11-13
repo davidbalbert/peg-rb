@@ -28,7 +28,7 @@ module Peg
       end
     end
 
-    attr_reader :grammar, :operations :wrapper
+    attr_reader :grammar, :operations, :wrapper
 
     def initialize(grammar)
       @grammar = grammar
@@ -44,7 +44,7 @@ module Peg
       end
 
       operations[name] = Module.new(&block)
-      args = block.parameters.map { |(_, name) name }
+      args = block.parameters.map { |(_, name)| name }
 
       wrapper.class_eval do
         attr_reader *args
@@ -52,12 +52,17 @@ module Peg
 
       wrapper.class_eval <<~RUBY
       def #{name}(#{args.join(', ')})
-        #{args.map { "@#{_1}" }.join(', ')} = #{args.join(', ')}
+        #{args.empty? ? "" : args.map { "@#{_1}" }.join(', ') + " = " + args.join(', ')}
 
-        action = _semantics.operations[:#{name}].instance_method(type)&.bind(self)
+        action = _semantics.operations[:#{name}].instance_method(name)&.bind(self)
+        nonterminal_action = _semantics.operations[:#{name}].instance_method("_nonterminal")&.bind(self)
 
-        if !action && arity == 1
+        if !action && nonterminal? && arity == 1
           action = ->(child) { child.send(#{(["name"] + args).join(", ")}) }
+        elsif !action && nonterminal? && nonterminal_action
+          action = nonterminal_action
+        elsif !action
+          raise "#{name}: missing semantics for " + name # todo, figure out what type of error this should be
         end
 
         action.call(*children)
@@ -70,4 +75,5 @@ module Peg
     def wrap(result)
       wrapper.new(result.parse_tree, self)
     end
+  end
 end

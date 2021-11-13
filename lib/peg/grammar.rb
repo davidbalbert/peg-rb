@@ -4,15 +4,12 @@ module Peg
       new.match?(input, rule: rule)
     end
 
-    def self.parse(input, actions: nil, rule: :root)
-      new(actions).parse(input, rule: rule)
+    def self.parse(input, rule: :root)
+      new.parse(input, rule: rule)
     end
-
-
-    attr_reader :actions
-
-    def initialize(actions=nil)
-      @actions = actions
+    
+    def self.create_semantics
+      Semantics.new(self)
     end
 
     def match?(input, rule: :root)
