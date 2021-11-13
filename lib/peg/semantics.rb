@@ -52,8 +52,6 @@ module Peg
 
       wrapper.class_eval <<~RUBY
       def #{name}(#{args.join(', ')})
-        puts "== " + name.to_s
-
         #{args.empty? ? "" : args.map { "@#{_1}" }.join(', ') + " = " + args.join(', ')}
 
         if _semantics.operations[:#{name}].method_defined?(name)
@@ -64,7 +62,9 @@ module Peg
           nonterminal_action = _semantics.operations[:#{name}].instance_method("_nonterminal").bind(self)
         end
 
-        if !action && nonterminal? && arity == 1
+        # TODO: eventually switch the if and the first elsif to match Ohm's semantics.
+        # _nonterminal should take precidence over calling the child
+        if !action && !iteration? && children.size == 1
           action = ->(child) { child.#{name}(#{args.join(", ")}) }
         elsif !action && nonterminal? && nonterminal_action
           action = nonterminal_action
@@ -72,7 +72,7 @@ module Peg
           raise "#{name}: missing semantics for " + name # todo, figure out what type of error this should be
         end
 
-        if enumerable?
+        if iteration?
           action.call(children)
         else
           action.call(*children)

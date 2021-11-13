@@ -8,10 +8,6 @@ module Peg
       @source_string = children.map(&:source_string).join
     end
 
-    def arity
-      children.size
-    end
-
     def terminal?
       false
     end
@@ -20,7 +16,7 @@ module Peg
       true
     end
 
-    def enumerable?
+    def iteration?
       false
     end
 
@@ -53,10 +49,6 @@ module Peg
       []
     end
 
-    def arity
-      1
-    end
-
     def terminal?
       true
     end
@@ -65,7 +57,7 @@ module Peg
       false
     end
 
-    def enumerable?
+    def iteration?
       false
     end
 
@@ -100,7 +92,7 @@ module Peg
       false
     end
 
-    def enumerable?
+    def iteration?
       true
     end
 
@@ -151,20 +143,28 @@ module Peg
         Failure.new
       end
     end
+
+    def arity
+      1
+    end
   end
 
   class Seq
-    attr_reader :values
+    attr_reader :exprs
 
-    def initialize(*values)
-      @values = values
+    def initialize(*exprs)
+      @exprs = exprs
     end
 
     def parse(grammar, input)
       res = Success.new([], 0)
 
-      values.each do |v|
-        r = v.parse(grammar, input)
+      exprs.each do |e|
+        if e.is_a? String
+          binding.pry
+        end
+
+        r = e.parse(grammar, input)
 
         return Failure.new unless r.success?
 
@@ -175,6 +175,11 @@ module Peg
 
       res
     end
+
+    def arity
+      exprs.map(&:arity).sum
+    end
+
   end
 
   class Choice
@@ -192,6 +197,11 @@ module Peg
       end
 
       Failure.new
+    end
+
+    def arity
+      # TODO: ensure all options have the same arity
+      options.size == 0 ? 0 : options.first.arity
     end
   end
 
@@ -211,72 +221,119 @@ module Peg
         Failure.new
       end
     end
+
+    def arity
+      1
+    end
   end
 
   class ZeroOrMore
-    attr_reader :value
+    attr_reader :expr
 
-    def initialize(value)
-      @value = value
+    def initialize(expr)
+      @expr = expr
     end
 
     def parse(grammar, input)
-      res = Success.new(IterationNode.new, 0)
+      nodes = expr.arity.times.map { IterationNode.new }
+      res = Success.new(nodes, 0)
 
       loop do
-        r = value.parse(grammar, input)
+        r = expr.parse(grammar, input)
 
         return res unless r.success?
 
-        res.parse_tree.children.concat Array(r.parse_tree)
-        res.parse_tree.source_string << Array(r.parse_tree).map(&:source_string).join
+        results = Array(r.parse_tree)
+        raise "results.size != nodes.size" unless results.size == res.parse_tree.size
+
+        res.parse_tree.zip(results) do |iter, result|
+          iter.children << result
+        end
+
+        res.parse_tree.each do |iter|
+          iter.source_string << results.map(&:source_string).join
+        end
+
         res.nchars += r.nchars
         input = input[r.nchars..]
       end
     end
+
+    def arity
+      expr.arity
+    end
   end
 
   class OneOrMore
-    attr_reader :value
+    attr_reader :expr
 
-    def initialize(value)
-      @value = value
+    def initialize(expr)
+      @expr = expr
     end
 
     def parse(grammar, input)
       res = Failure.new
 
+      nodes = expr.arity.times.map { IterationNode.new }
+
       loop do
-        r = value.parse(grammar, input)
+        r = expr.parse(grammar, input)
 
         return res unless r.success?
 
-        res = Success.new(IterationNode.new, 0) if res.fail?
-        res.parse_tree.children.concat Array(r.parse_tree)
-        res.parse_tree.source_string << Array(r.parse_tree).map(&:source_string).join
+        res = Success.new(nodes, 0) if res.fail?
+        results = Array(r.parse_tree)
+        raise "results.size != nodes.size" unless results.size == res.parse_tree.size
+
+        res.parse_tree.zip(results) do |iteration, result|
+          iteration.children << result
+        end
+
+        res.parse_tree.each do |iter|
+          iter.source_string << results.map(&:source_string).join
+        end
+
         res.nchars += r.nchars
         input = input[r.nchars..]
       end
     end
+
+    def arity
+      expr.arity
+    end
   end
 
   class Maybe
-    attr_reader :value
+    attr_reader :expr
 
-    def initialize(value)
-      @value = value
+    def initialize(expr)
+      @expr = expr
     end
 
     def parse(grammar, input)
-      res = Success.new(IterationNode.new, 0)
+      nodes = expr.arity.times.map { IterationNode.new }
+      res = Success.new(nodes, 0)
 
-      if (r = value.parse(grammar, input)).success?
-        res.parse_tree.children.concat Array(r.parse_tree)
-        res.parse_tree.source_string << Array(r.parse_tree).map(&:source_string).join
+      if (r = expr.parse(grammar, input)).success?
+        results = Array(r.parse_tree)
+        raise "results.size != nodes.size" unless results.size == res.parse_tree.size
+
+        res.parse_tree.zip(results) do |iteration, result|
+          iteration.children << result
+        end
+
+        res.parse_tree.each do |iter|
+          iter.source_string << results.map(&:source_string).join
+        end
+
         res.nchars += r.nchars
       end
 
       res
+    end
+
+    def arity
+      expr.arity
     end
   end
 
@@ -288,6 +345,10 @@ module Peg
         Failure.new
       end
     end
+
+    def arity
+      1
+    end
   end
 
   # Is this the right thing to do for empty
@@ -296,23 +357,31 @@ module Peg
     def parse(grammar, input)
       Failure.new
     end
+
+    def arity
+      0
+    end
   end
 
   class And
-    attr_reader :value
+    attr_reader :expr
 
-    def initialize(value)
-      @value = value
+    def initialize(expr)
+      @expr = expr
     end
 
     def parse(grammar, input)
-      res = value.parse(grammar, input)
+      res = expr.parse(grammar, input)
 
       if res.success?
         Success.new(nil, 0)
       else
         Failure.new
       end
+    end
+
+    def arity
+      expr.arity
     end
   end
 
@@ -331,6 +400,10 @@ module Peg
       else
         Success.new(nil, 0)
       end
+    end
+
+    def arity
+      0
     end
   end
 
@@ -364,6 +437,10 @@ module Peg
       @@indent -= 2
 
       res
+    end
+
+    def arity
+      1
     end
   end
 end

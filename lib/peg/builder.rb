@@ -17,16 +17,8 @@ module Peg
         builder.def_rule(name, body)
       end
 
-      def InlineRules(named_seq, named_seqs)
-        # named_seqs: [('/', named_seq)...]
-
-        pp named_seqs
-
-        rest = named_seqs.children.map { |c| c.children[1] }
-
-        # pp rest
-
-        alts = [named_seq.visit(builder), *rest.map { |s| s.visit(builder) }]
+      def InlineRules(named_seq, _, named_seqs)
+        alts = [named_seq.visit(builder), *named_seqs.children.map { |s| s.visit(builder) }]
 
         if alts.size == 1
           alts.first
@@ -35,11 +27,8 @@ module Peg
         end
       end
 
-      def Expression(seq, seqs)
-        # seqs: [('/', seq)...]
-        rest = seqs.children.map { |c| c.children[1] }
-
-        alts = [seq.visit(builder), *rest.map { |s| s.visit(builder) }]
+      def Expression(seq, _, seqs)
+        alts = [seq.visit(builder), *seqs.children.map { |s| s.visit(builder) }]
         if alts.size == 1
           alts.first
         else
@@ -93,6 +82,10 @@ module Peg
 
       def Primary_group(_, expr, _)
         expr.visit(builder)
+      end
+
+      def Dot(_)
+        Peg::Any.new
       end
 
       def Identifier(start, rest, _)
@@ -199,7 +192,7 @@ module Peg
       end
 
       def DOT(s, _)
-        s.visit(builder)
+        Peg::Any.new
       end
 
       def DASHES(s, _)
