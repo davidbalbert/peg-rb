@@ -4,6 +4,10 @@ module Peg
 
     module_attribute :default_rule
 
+    def self.rules
+      @rules ||= []
+    end
+
     def self.match?(input, rule: nil)
       new.match?(input, rule: rule || default_rule)
     end

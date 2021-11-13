@@ -13,6 +13,7 @@ module Peg
         name = n.visit(builder)
         builder.current_rule_name = name
 
+        builder.declare_rule(name)
         body = rules.visit(builder)
         builder.def_rule(name, body)
       end
@@ -39,6 +40,7 @@ module Peg
       def NamedSequence_inline(seq, _, identifier)
         name = builder.current_rule_name + '_' + identifier.visit(builder)
 
+        builder.declare_rule(name)
         builder.def_rule(name, seq.visit(builder))
 
         Apply.new(name.intern)
@@ -238,6 +240,12 @@ module Peg
       end
 
       @current_rule_name = name
+    end
+
+    def declare_rule(name)
+      grammar.class_eval do
+        rules << name
+      end
     end
 
     def def_rule(name, body)

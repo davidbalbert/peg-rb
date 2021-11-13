@@ -160,10 +160,6 @@ module Peg
       res = Success.new([], 0)
 
       exprs.each do |e|
-        if e.is_a? String
-          binding.pry
-        end
-
         r = e.parse(grammar, input)
 
         return Failure.new unless r.success?
@@ -179,7 +175,6 @@ module Peg
     def arity
       exprs.map(&:arity).sum
     end
-
   end
 
   class Choice
@@ -386,14 +381,14 @@ module Peg
   end
 
   class Not
-    attr_reader :value
+    attr_reader :expr
 
-    def initialize(value)
-      @value = value
+    def initialize(expr)
+      @expr = expr
     end
 
     def parse(grammar, input)
-      res = value.parse(grammar, input)
+      res = expr.parse(grammar, input)
 
       if res.success?
         Failure.new

@@ -27,3 +27,9 @@ require 'peg/grammar'
 require 'peg/semantics'
 require 'peg/parser'
 require 'peg/builder'
+
+module Peg
+  def self.build(source)
+    Peg::Builder.new(source).build
+  end
+end
