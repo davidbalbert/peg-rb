@@ -1,90 +1,104 @@
 require 'delegate'
 
-# semantics = Peg::Parser.create_semantics.def_operation :to_rb do |pretty_print|
-#   def Grammar(foo, bar, baz)
-#   end
-#
-#   def Rule(name, _, body)
-#   end
-# end
-#
-# result = grammar.parse("hello world")
-# semantics.wrap(result).to_rb
+require 'peg/method_signature'
 
 module Peg
   class Semantics
-    class Wrapper < SimpleDelegator
-      attr_reader :_semantics
+    using SignatureExtraction
+    using Classify
 
-      def initialize(node, semantics)
-        super(node)
-        @_semantics = semantics
+    class Wrapper < SimpleDelegator
+      def self.add_operation(name, accessor, signature)
+        params = signature.parameters.map(&:name)
+
+        class_eval do
+          attr_reader *params
+        end
+
+        class_eval <<~RUBY
+          def #{name}(#{signature.to_s})
+            #{params.map { |n| "@#{n} = #{n}" }.join("\n") }
+
+            op = _algebra.#{accessor}.new(self)
+
+            if op.respond_to?(name)
+              action = op.method(name)
+            elsif !iteration? && children.size == 1
+              action = ->(child) { child.#{name}(#{signature.to_s}) }
+            elsif nonterminal? && op.respond_to?(:_nonterminal)
+              action = op.method(:_nonterminal)
+            else
+              raise NoMethodError, "missing semantics for " + name + " for #{name}"
+            end
+
+            if iteration?
+              action.call(children)
+            else
+              action.call(*children)
+            end
+          end
+        RUBY
+      end
+
+      attr_reader :_algebra
+
+      def initialize(o, algebra)
+        super(o)
+        @_algebra = algebra
       end
 
       def children
         super.map do |child|
-          self.class.new(child, _semantics)
+          self.class.new(child, _algebra)
         end
       end
     end
 
-    attr_reader :grammar, :operations, :wrapper
-
-    def initialize(grammar)
-      @grammar = grammar
-      @operations = {}
-      @wrapper = Class.new(Wrapper)
+    class Operation < SimpleDelegator
     end
 
-    def def_operation(name, &block)
-      name = name.intern
-
-      if operations.key?(name)
-        raise ArgumentError, "an operation called `#{name}' has already been defined"
-      end
-
-      operations[name] = Module.new(&block)
-      args = block.parameters.map { |(_, name)| name }
-
-      wrapper.class_eval do
-        attr_reader *args
-      end
-
-      wrapper.class_eval <<~RUBY
-      def #{name}(#{args.join(', ')})
-        #{args.empty? ? "" : args.map { "@#{_1}" }.join(', ') + " = " + args.join(', ')}
-
-        if _semantics.operations[:#{name}].method_defined?(name)
-          action = _semantics.operations[:#{name}].instance_method(name).bind(self)
-        end
-
-        if _semantics.operations[:#{name}].method_defined?("_nonterminal")
-          nonterminal_action = _semantics.operations[:#{name}].instance_method("_nonterminal").bind(self)
-        end
-
-        # TODO: eventually switch the if and the first elsif to match Ohm's semantics.
-        # _nonterminal should take precidence over calling the child
-        if !action && !iteration? && children.size == 1
-          action = ->(child) { child.#{name}(#{args.join(", ")}) }
-        elsif !action && nonterminal? && nonterminal_action
-          action = nonterminal_action
-        elsif !action
-          raise "#{name}: missing semantics for " + name # todo, figure out what type of error this should be
-        end
-
-        if iteration?
-          action.call(children)
-        else
-          action.call(*children)
-        end
-      end
-      RUBY
-
-      self
+    def self.wrapper
+      const_get(:Wrapper)
     end
 
-    def wrap(result)
-      wrapper.new(result.parse_tree, self)
+    def self.inherited(subclass)
+      subclass.class_eval do
+        const_set :Wrapper, Class.new(wrapper)
+      end
+    end
+
+    def self.[](grammar)
+      supergrammar = const_defined?(:Grammar) ? const_get(:Grammar) : Grammar
+
+      unless grammar < supergrammar
+        raise ArgumentError, "#{grammar} must be a subclass of #{supergrammar}."
+      end
+
+      Class.new(self) do
+        const_set(:Grammar, grammar)
+      end
+    end
+
+    def self.def_operation(name, &block)
+      const_name  = :"Op#{name.to_s.classify}"
+      accessor = :"_op_#{name}"
+
+      superclass = const_defined?(const_name) ? const_get(const_name) : Operation
+      op = Class.new(superclass, &block)
+
+      const_set const_name, op
+
+      define_method accessor do
+        op
+      end
+
+      wrapper.add_operation(name, accessor, block.signature)
+
+      name.intern
+    end
+
+    def self.wrap(result)
+      wrapper.new(result.parse_tree, new)
     end
   end
 end

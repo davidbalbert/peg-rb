@@ -1,12 +1,4 @@
 module Peg
-  module Indentation
-    refine String do
-      def indent(n)
-        split("\n").map { |l| " "*n + l }.join("\n")
-      end
-    end
-  end
-
   using Indentation
 
   class Grammar

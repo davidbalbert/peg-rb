@@ -1,3 +1,7 @@
+require 'peg/refinements'
+require 'peg/semantics'
+require 'peg/runtime'
+
 module Peg
   class Grammar
     using ModuleAttribute
@@ -14,10 +18,6 @@ module Peg
 
     def self.parse(input, rule: nil)
       new.parse(input, rule: rule || default_rule)
-    end
-
-    def self.create_semantics
-      Semantics.new(self)
     end
 
     def match?(input, rule:)
