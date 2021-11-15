@@ -6,15 +6,34 @@ require 'peg/runtime'
 
 class Peg::Parser < Peg::Grammar
   self.default_rule = :grammar
-  self.rules = [:grammar, :definition, :inlineRules, :expression, :namedSequence, :namedSequence_inline, :sequence, :prefix, :prefix_and, :prefix_not, :suffix, :suffix_maybe, :suffix_star, :suffix_plus, :primary, :primary_identifier, :primary_group, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :leftArrow, :slash, :and, :not, :query, :star, :plus, :open, :close, :dot, :dashes, :spacing, :comment, :space, :endOfLine, :endOfFile]
+  self.rules = [:grammar, :superGrammar, :definition, :inlineRules, :expression, :namedSequence, :namedSequence_inline, :sequence, :prefix, :prefix_and, :prefix_not, :suffix, :suffix_maybe, :suffix_star, :suffix_plus, :primary, :primary_identifier, :primary_group, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :leftArrow, :slash, :and, :not, :query, :star, :plus, :open, :close, :dot, :dashes, :spacing, :comment, :space, :endOfLine, :endOfFile]
 
   def grammar
     Peg::Seq.new(
       Peg::Apply.new(:spacing),
+      Peg::Apply.new(:identifier),
+      Peg::Apply.new(:spacing),
+      Peg::Maybe.new(
+        Peg::Apply.new(:superGrammar)
+      ),
+      Peg::Apply.new(:spacing),
+      Peg::Term.new("{"),
+      Peg::Apply.new(:spacing),
       Peg::OneOrMore.new(
         Peg::Apply.new(:definition)
       ),
+      Peg::Apply.new(:spacing),
+      Peg::Term.new("}"),
+      Peg::Apply.new(:spacing),
       Peg::Apply.new(:endOfFile)
+    )
+  end
+
+  def superGrammar
+    Peg::Seq.new(
+      Peg::Term.new("<:"),
+      Peg::Apply.new(:spacing),
+      Peg::Apply.new(:identifier)
     )
   end
 

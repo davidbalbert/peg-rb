@@ -1,5 +1,5 @@
-grammar         <- spacing definition+ endOfFile
-
+grammar         <- spacing identifier spacing superGrammar? spacing "{" spacing definition+ spacing "}" spacing endOfFile
+superGrammar    <- "<:" spacing identifier
 definition      <- identifier leftArrow inlineRules
 inlineRules     <- namedSequence ( slash namedSequence )*
 expression      <- sequence ( slash sequence )*
