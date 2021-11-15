@@ -6,7 +6,7 @@ require 'peg/runtime'
 
 class Peg::Parser < Peg::BuiltInRules
   self.default_rule = :Grammar
-  self.rules = [:Grammar, :SuperGrammar, :definition, :inlineRules, :expression, :namedSequence, :namedSequence_inline, :sequence, :prefix, :prefix_and, :prefix_not, :suffix, :suffix_maybe, :suffix_star, :suffix_plus, :primary, :primary_identifier, :primary_group, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :leftArrow, :slash, :and, :not, :query, :star, :plus, :open, :close, :dot, :dashes, :spacing, :comment, :endOfLine, :endOfFile]
+  self.rules = [:Grammar, :SuperGrammar, :Definition, :inlineRules, :expression, :namedSequence, :namedSequence_inline, :sequence, :prefix, :prefix_and, :prefix_not, :suffix, :suffix_maybe, :suffix_star, :suffix_plus, :primary, :primary_identifier, :primary_group, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :leftArrow, :slash, :and, :not, :query, :star, :plus, :open, :close, :dot, :dashes, :spacing, :comment, :endOfLine, :endOfFile]
 
   def Grammar
     Peg::Seq.new(
@@ -16,7 +16,7 @@ class Peg::Parser < Peg::BuiltInRules
       ),
       Peg::Term.new("{"),
       Peg::OneOrMore.new(
-        Peg::Apply.new(:definition)
+        Peg::Apply.new(:Definition)
       ),
       Peg::Term.new("}"),
       Peg::Apply.new(:endOfFile)
@@ -30,7 +30,7 @@ class Peg::Parser < Peg::BuiltInRules
     )
   end
 
-  def definition
+  def Definition
     Peg::Seq.new(
       Peg::Apply.new(:identifier),
       Peg::Apply.new(:leftArrow),
@@ -330,10 +330,7 @@ class Peg::Parser < Peg::BuiltInRules
   end
 
   def leftArrow
-    Peg::Seq.new(
-      Peg::Term.new("<-"),
-      Peg::Apply.new(:spacing)
-    )
+    Peg::Term.new("<-")
   end
 
   def slash

@@ -1,7 +1,7 @@
 Parser {
-  Grammar         <- identifier SuperGrammar? "{" definition+ "}" endOfFile
+  Grammar         <- identifier SuperGrammar? "{" Definition+ "}" endOfFile
   SuperGrammar    <- "<:" identifier
-  definition      <- identifier leftArrow inlineRules
+  Definition      <- identifier leftArrow inlineRules
   inlineRules     <- namedSequence ( slash namedSequence )*
   expression      <- sequence ( slash sequence )*
   namedSequence   <- sequence dashes identifier -- inline
@@ -43,7 +43,7 @@ Parser {
                    / !'\\' .               -- regular
 
   hex             <- [0-9a-fA-F]
-  leftArrow       <- '<-' spacing
+  leftArrow       <- '<-'
   slash           <- '/' spacing
   and             <- '&' spacing
   not             <- '!' spacing

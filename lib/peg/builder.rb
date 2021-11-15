@@ -33,7 +33,7 @@ module Peg
           name.visit(builder).constantize(builder.namespace)
         end
 
-        def definition(n, _, rules)
+        def Definition(n, _, rules)
           name = n.visit(builder)
           builder.current_rule_name = name
 
