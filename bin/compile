@@ -37,10 +37,10 @@ unless ARGV.size == 2
   exit(1)
 end
 
-grammar = File.read(ARGV[0])
+source = File.read(ARGV[0])
 class_name = ARGV[1]
 
-grammar = Peg.compile(grammar, namespace: options[:namespace] || Object)
+grammar = Peg.compile(source, namespace: options[:namespace] || Object)
 source = grammar.to_rb(class_name)
 
 prelude = <<~END

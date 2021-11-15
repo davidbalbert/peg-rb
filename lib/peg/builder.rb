@@ -115,7 +115,7 @@ module Peg
         end
 
         def literal(_, chars, _, _)
-          Peg::Term.new(chars.children.map { |c| c.visit(builder) }.join)
+          Term.new(chars.children.map { |c| c.visit(builder) }.join)
         end
 
         def charClass(_, ranges, _, _)
