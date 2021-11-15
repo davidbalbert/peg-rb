@@ -3,8 +3,8 @@ require "rake/testtask"
 task default: "lib/peg/parser.rb"
 
 desc "Compile lib/peg/parser.rb from lib/peg/meta_grammar.peg"
-file "lib/peg/parser.rb" => ["lib/peg/meta_grammar.peg", "lib/peg/builder.rb", "bin/compile"] do
-  xsystem("bin/compile lib/peg/meta_grammar.peg Peg::Parser -o lib/peg/parser.rb")
+file "lib/peg/parser.rb" => ["lib/peg/parser.peg", "lib/peg/builder.rb", "bin/compile"] do
+  xsystem("bin/compile lib/peg/parser.peg Peg::Parser -o lib/peg/parser.rb")
 end
 
 def xsystem(cmd)
