@@ -3,6 +3,7 @@
 
 require 'peg/grammar'
 require 'peg/runtime'
+
 class Peg::Parser < Peg::Grammar
   self.default_rule = :Grammar
 

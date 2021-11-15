@@ -43,6 +43,7 @@ prelude = <<~END
 
 require 'peg/grammar'
 require 'peg/runtime'
+
 END
 
 if options[:output]
