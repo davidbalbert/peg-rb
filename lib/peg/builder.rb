@@ -1,18 +1,35 @@
+require 'peg/refinements'
 require 'peg/runtime'
 require 'peg/grammar'
 require 'peg/semantics'
 require 'peg/parser'
 
 module Peg
+  using Constantize
+
   class Builder
     class Visitor < Semantics[Parser]
       def_operation :visit do |builder|
-        def grammar(_, defs, _)
+        def grammar(_, name, _, super_grammar, _, _, _, defs, _, _, _, _)
+          name = name.visit(builder)
+
+          if !super_grammar.children.empty?
+            super_grammar = super_grammar.children[0].visit(builder)
+          else
+            super_grammar = Peg::Grammar
+          end
+
+          builder.super_grammar = super_grammar
+
           defs.children.each do |d|
             d.visit(builder)
           end
 
           builder.grammar
+        end
+
+        def superGrammar(_, _, name)
+          name.visit(builder).constantize
         end
 
         def definition(n, _, rules)
@@ -210,11 +227,11 @@ module Peg
       end
     end
 
-    attr_reader :source, :grammar, :current_rule_name
+    attr_reader :source, :current_rule_name
+    attr_accessor :super_grammar
 
     def initialize(source)
       @source = source
-      @grammar = Class.new(Peg::Grammar)
       @first = true
     end
 
@@ -224,6 +241,10 @@ module Peg
       raise "Couldn't parse" if result.fail?
 
       Visitor.wrap(result).visit(self)
+    end
+
+    def grammar
+      @grammar ||= Class.new(super_grammar)
     end
 
     def current_rule_name=(name)

@@ -1,60 +1,62 @@
-grammar         <- spacing identifier spacing superGrammar? spacing "{" spacing definition+ spacing "}" spacing endOfFile
-superGrammar    <- "<:" spacing identifier
-definition      <- identifier leftArrow inlineRules
-inlineRules     <- namedSequence ( slash namedSequence )*
-expression      <- sequence ( slash sequence )*
-namedSequence   <- sequence dashes identifier -- inline
-                 / sequence
-sequence        <- prefix*
-prefix          <- and suffix -- and
-                 / not suffix -- not
-                 / suffix
-suffix          <- primary query -- maybe
-                 / primary star  -- star
-                 / primary plus  -- plus
-                 / primary
-primary         <- identifier !leftArrow -- identifier
-                 / open expression close -- group
-                 / literal
-                 / charClass
-                 / dot
+Parser {
+  grammar         <- spacing identifier spacing superGrammar? spacing "{" spacing definition+ spacing "}" spacing endOfFile
+  superGrammar    <- "<:" spacing identifier
+  definition      <- identifier leftArrow inlineRules
+  inlineRules     <- namedSequence ( slash namedSequence )*
+  expression      <- sequence ( slash sequence )*
+  namedSequence   <- sequence dashes identifier -- inline
+                   / sequence
+  sequence        <- prefix*
+  prefix          <- and suffix -- and
+                   / not suffix -- not
+                   / suffix
+  suffix          <- primary query -- maybe
+                   / primary star  -- star
+                   / primary plus  -- plus
+                   / primary
+  primary         <- identifier !leftArrow -- identifier
+                   / open expression close -- group
+                   / literal
+                   / charClass
+                   / dot
 
-identifier      <- identStart identCont* spacing
-identStart      <- [a-zA-Z_]
-identCont       <- identStart / [0-9]
-literal         <- ['] ( !['] char  )* ['] spacing
-                 / ["] ( !["] char  )* ["] spacing
-charClass       <- '[' ( !']' range )* ']' spacing
-range           <- char '-' char -- multiple
-                 / char
+  identifier      <- identStart identCont* spacing
+  identStart      <- [a-zA-Z_]
+  identCont       <- identStart / [0-9]
+  literal         <- ['] ( !['] char  )* ['] spacing
+                   / ["] ( !["] char  )* ["] spacing
+  charClass       <- '[' ( !']' range )* ']' spacing
+  range           <- char '-' char -- multiple
+                   / char
 
-char            <- '\\\\'                -- backslash
-                 / '\\\"'                -- doubleQuote
-                 / '\\\''                -- singleQuote
-                 / '\\['                 -- openSquare
-                 / '\\]'                 -- closeSquare
-                 / '\\b'                 -- backspace
-                 / '\\n'                 -- newline
-                 / '\\r'                 -- carriageReturn
-                 / '\\t'                 -- tab
-                 / '\\u' hex hex hex hex -- unicode
-                 / '\\x' hex hex         -- hex
-                 / !'\\' .               -- regular
+  char            <- '\\\\'                -- backslash
+                   / '\\\"'                -- doubleQuote
+                   / '\\\''                -- singleQuote
+                   / '\\['                 -- openSquare
+                   / '\\]'                 -- closeSquare
+                   / '\\b'                 -- backspace
+                   / '\\n'                 -- newline
+                   / '\\r'                 -- carriageReturn
+                   / '\\t'                 -- tab
+                   / '\\u' hex hex hex hex -- unicode
+                   / '\\x' hex hex         -- hex
+                   / !'\\' .               -- regular
 
-hex             <- [0-9a-fA-F]
-leftArrow       <- '<-' spacing
-slash           <- '/' spacing
-and             <- '&' spacing
-not             <- '!' spacing
-query           <- '?' spacing
-star            <- '*' spacing
-plus            <- '+' spacing
-open            <- '(' spacing
-close           <- ')' spacing
-dot             <- '.' spacing
-dashes          <- '--' spacing
-spacing         <- ( space / comment )*
-comment         <- '#' ( !endOfLine . )* endOfLine
-space           <- ' ' / '\t' / endOfLine
-endOfLine       <- '\r\n' / '\n' / '\r'
-endOfFile       <- !.
+  hex             <- [0-9a-fA-F]
+  leftArrow       <- '<-' spacing
+  slash           <- '/' spacing
+  and             <- '&' spacing
+  not             <- '!' spacing
+  query           <- '?' spacing
+  star            <- '*' spacing
+  plus            <- '+' spacing
+  open            <- '(' spacing
+  close           <- ')' spacing
+  dot             <- '.' spacing
+  dashes          <- '--' spacing
+  spacing         <- ( space / comment )*
+  comment         <- '#' ( !endOfLine . )* endOfLine
+  space           <- ' ' / '\t' / endOfLine
+  endOfLine       <- '\r\n' / '\n' / '\r'
+  endOfFile       <- !.
+}

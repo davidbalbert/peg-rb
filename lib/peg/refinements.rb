@@ -33,6 +33,27 @@ module Peg
     end
   end
 
+  module Constantize
+    refine String do
+      def constantize
+        parts = split('::')
+
+        # fully qualified constants, e.g. ::Foo::Bar::Baz
+        if parts.first == ""
+          parts = parts[1..-1]
+        end
+
+        constant = Object
+
+        parts.each do |p|
+          constant = constant.const_get(p)
+        end
+
+        constant
+      end
+    end
+  end
+
   module ToLambda
     refine Proc do
       def to_lambda
