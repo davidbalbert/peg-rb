@@ -35,7 +35,7 @@ module Peg
 
   module Constantize
     refine String do
-      def constantize
+      def constantize(root=Object)
         parts = split('::')
 
         # fully qualified constants, e.g. ::Foo::Bar::Baz
@@ -43,7 +43,7 @@ module Peg
           parts = parts[1..-1]
         end
 
-        constant = Object
+        constant = root
 
         parts.each do |p|
           constant = constant.const_get(p)

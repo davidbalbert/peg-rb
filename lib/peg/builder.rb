@@ -2,6 +2,7 @@ require 'peg/refinements'
 require 'peg/runtime'
 require 'peg/grammar'
 require 'peg/semantics'
+require 'peg/built_in_rules'
 require 'peg/parser'
 
 module Peg
@@ -16,7 +17,7 @@ module Peg
           if !super_grammar.children.empty?
             super_grammar = super_grammar.children[0].visit(builder)
           else
-            super_grammar = Peg::Grammar
+            super_grammar = Peg::BuiltInRules
           end
 
           builder.super_grammar = super_grammar
@@ -29,7 +30,7 @@ module Peg
         end
 
         def superGrammar(_, _, name)
-          name.visit(builder).constantize
+          name.visit(builder).constantize(builder.namespace)
         end
 
         def definition(n, _, rules)
@@ -227,11 +228,12 @@ module Peg
       end
     end
 
-    attr_reader :source, :current_rule_name
+    attr_reader :source, :namespace, :current_rule_name
     attr_accessor :super_grammar
 
-    def initialize(source)
+    def initialize(source, namespace:)
       @source = source
+      @namespace = namespace
       @first = true
     end
 

@@ -7,6 +7,8 @@ $LOAD_PATH << File.expand_path("../lib", __dir__)
 require "peg"
 require "peg/codegen"
 
+using Peg::Constantize
+
 require "optparse"
 
 usage = "usage: #$0 [options] path/to/grammar.peg class_name"
@@ -18,6 +20,10 @@ OptionParser.new do |opts|
 
   opts.on("-oOUTPUT", "--output=OUTPUT", "Write to a file") do |output|
     options[:output] = output
+  end
+
+  opts.on("-nNAMESPACE", "--output=NAMESPACE", "Ruby module for looking up super grammars") do |namespace|
+    options[:namespace] = namespace.constantize
   end
 
   opts.on("-h", "--help", "Prints this help") do
@@ -34,7 +40,7 @@ end
 grammar = File.read(ARGV[0])
 class_name = ARGV[1]
 
-grammar = Peg.compile(grammar)
+grammar = Peg.compile(grammar, namespace: options[:namespace] || Object)
 source = grammar.to_rb(class_name)
 
 prelude = <<~END

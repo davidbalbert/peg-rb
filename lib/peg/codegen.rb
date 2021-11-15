@@ -8,7 +8,7 @@ module Peg
 
     def to_rb(class_name)
       <<~RUBY
-        class #{class_name} < Peg::Grammar
+        class #{class_name} < #{self.class.superclass}
           self.default_rule = :#{self.class.default_rule}
           self.rules = #{self.class.rules.inspect}
 

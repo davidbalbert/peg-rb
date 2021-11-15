@@ -1,0 +1,4 @@
+BuiltInRules <: Grammar {
+  spaces <- space*
+  space  <- [ \t\r\n]
+}
