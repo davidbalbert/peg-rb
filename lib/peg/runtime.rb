@@ -127,6 +127,10 @@ module Peg
     def fail?
       true
     end
+
+    def nchars
+      0
+    end
   end
 
   class Term
@@ -136,7 +140,7 @@ module Peg
       @value = value
     end
 
-    def parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
       if input.start_with?(value)
         Success.new(TerminalNode.new(value), value.size)
       else
@@ -156,11 +160,17 @@ module Peg
       @exprs = exprs
     end
 
-    def parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
       res = Success.new([], 0)
 
       exprs.each do |e|
-        r = e.parse(grammar, input)
+        if skip_whitespace
+          r = Apply.new(:spaces).parse(grammar, input, false, false)
+          res.nchars += r.nchars
+          input = input[r.nchars]
+        end
+
+        r = e.parse(grammar, input, skip_whitespace, false)
 
         return Failure.new unless r.success?
 
@@ -184,9 +194,9 @@ module Peg
       @options = options
     end
 
-    def parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
       options.each do |opt|
-        if (res = opt.parse(grammar, input)).success?
+        if (res = opt.parse(grammar, input, skip_whitespace, false)).success?
           return res
         end
       end
@@ -207,7 +217,7 @@ module Peg
       @chars = chars
     end
 
-    def parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
       return Failure.new if input.empty?
 
       if chars.include?(input[0])
@@ -229,12 +239,18 @@ module Peg
       @expr = expr
     end
 
-    def parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
       nodes = expr.arity.times.map { IterationNode.new }
       res = Success.new(nodes, 0)
 
       loop do
-        r = expr.parse(grammar, input)
+        if skip_whitespace
+          r = Apply.new(:spaces).parse(grammar, input, false, false)
+          res.nchars += r.nchars
+          input = input[r.nchars]
+        end
+
+        r = expr.parse(grammar, input, skip_whitespace, false)
 
         return res unless r.success?
 
@@ -266,13 +282,19 @@ module Peg
       @expr = expr
     end
 
-    def parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
       res = Failure.new
 
       nodes = expr.arity.times.map { IterationNode.new }
 
       loop do
-        r = expr.parse(grammar, input)
+        if skip_whitespace
+          r = Apply.new(:spaces).parse(grammar, input, false, false)
+          res.nchars += r.nchars
+          input = input[r.nchars]
+        end
+
+        r = expr.parse(grammar, input, skip_whitespace, false)
 
         return res unless r.success?
 
@@ -305,11 +327,17 @@ module Peg
       @expr = expr
     end
 
-    def parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
       nodes = expr.arity.times.map { IterationNode.new }
       res = Success.new(nodes, 0)
 
-      if (r = expr.parse(grammar, input)).success?
+      if skip_whitespace
+        r = Apply.new(:spaces).parse(grammar, input, false, false)
+        res.nchars += r.nchars
+        input = input[r.nchars]
+      end
+
+      if (r = expr.parse(grammar, input, skip_whitespace, false)).success?
         results = Array(r.parse_tree)
         raise "results.size != nodes.size" unless results.size == res.parse_tree.size
 
@@ -333,7 +361,7 @@ module Peg
   end
 
   class Any
-    def parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
       if input.size > 0
         Success.new(TerminalNode.new(input[0]), 1)
       else
@@ -349,7 +377,7 @@ module Peg
   # Is this the right thing to do for empty
   # rules? I'm not sure.
   class Never
-    def parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
       Failure.new
     end
 
@@ -365,8 +393,8 @@ module Peg
       @expr = expr
     end
 
-    def parse(grammar, input)
-      res = expr.parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
+      res = expr.parse(grammar, input, skip_whitespace, false)
 
       if res.success?
         Success.new(nil, 0)
@@ -387,8 +415,8 @@ module Peg
       @expr = expr
     end
 
-    def parse(grammar, input)
-      res = expr.parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
+      res = expr.parse(grammar, input, skip_whitespace, false)
 
       if res.success?
         Failure.new
@@ -411,12 +439,25 @@ module Peg
       @rule = rule
     end
 
-    def parse(grammar, input)
+    def parse(grammar, input, skip_whitespace, start_rule)
       debug(input) do
+        skip_whitespace = rule.to_s[0].match?(/\A[[:upper:]]\z/)
+
+        if skip_whitespace
+          res = Apply.new(:spaces).parse(grammar, input, false, false)
+          input = input[res.nchars]
+        end
+
         body = grammar.send(rule)
-        res = body.parse(grammar, input)
+        res = body.parse(grammar, input, skip_whitespace, false)
 
         return res if res.fail?
+
+        if skip_whitespace && start_rule
+          r = Apply.new(:spaces).parse(grammar, input, false, false)
+          res.nchars += r.nchars
+          input = input[r.nchars]
+        end
 
         Success.new(NonterminalNode.new(rule, Array(res.parse_tree)), res.nchars)
       end
