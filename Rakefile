@@ -3,7 +3,7 @@ require "rake/testtask"
 task default: "lib/peg/parser.rb"
 
 desc "Compile grammars"
-task default: ["lib/peg/parser.rb", "lib/peg/built_in_rules.rb"]
+task default: ["lib/peg/built_in_rules.rb", "lib/peg/parser.rb"]
 
 desc "Compile lib/peg/parser.rb"
 file "lib/peg/parser.rb" => ["lib/peg/parser.peg", "lib/peg/builder.rb", "bin/compile"] do

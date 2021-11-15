@@ -1,5 +1,5 @@
 Parser {
-  grammar         <- spacing identifier spacing superGrammar? spacing "{" spacing definition+ spacing "}" spacing endOfFile
+  Grammar         <- identifier superGrammar? "{" definition+ "}" endOfFile
   superGrammar    <- "<:" spacing identifier
   definition      <- identifier leftArrow inlineRules
   inlineRules     <- namedSequence ( slash namedSequence )*
@@ -56,7 +56,6 @@ Parser {
   dashes          <- '--' spacing
   spacing         <- ( space / comment )*
   comment         <- '#' ( !endOfLine . )* endOfLine
-  space           <- ' ' / '\t' / endOfLine
   endOfLine       <- '\r\n' / '\n' / '\r'
   endOfFile       <- !.
 }

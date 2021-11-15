@@ -167,7 +167,7 @@ module Peg
         if skip_whitespace
           r = Apply.new(:spaces).parse(grammar, input, false, false)
           res.nchars += r.nchars
-          input = input[r.nchars]
+          input = input[r.nchars..]
         end
 
         r = e.parse(grammar, input, skip_whitespace, false)
@@ -247,7 +247,7 @@ module Peg
         if skip_whitespace
           r = Apply.new(:spaces).parse(grammar, input, false, false)
           res.nchars += r.nchars
-          input = input[r.nchars]
+          input = input[r.nchars..]
         end
 
         r = expr.parse(grammar, input, skip_whitespace, false)
@@ -288,10 +288,12 @@ module Peg
       nodes = expr.arity.times.map { IterationNode.new }
 
       loop do
+        nskipped = 0
+
         if skip_whitespace
           r = Apply.new(:spaces).parse(grammar, input, false, false)
-          res.nchars += r.nchars
-          input = input[r.nchars]
+          skipped = r.nchars
+          input = input[r.nchars..]
         end
 
         r = expr.parse(grammar, input, skip_whitespace, false)
@@ -310,7 +312,7 @@ module Peg
           iter.source_string << results.map(&:source_string).join
         end
 
-        res.nchars += r.nchars
+        res.nchars += r.nchars + nskipped
         input = input[r.nchars..]
       end
     end
@@ -334,7 +336,7 @@ module Peg
       if skip_whitespace
         r = Apply.new(:spaces).parse(grammar, input, false, false)
         res.nchars += r.nchars
-        input = input[r.nchars]
+        input = input[r.nchars..]
       end
 
       if (r = expr.parse(grammar, input, skip_whitespace, false)).success?
@@ -445,7 +447,7 @@ module Peg
 
         if skip_whitespace
           res = Apply.new(:spaces).parse(grammar, input, false, false)
-          input = input[res.nchars]
+          input = input[res.nchars..]
         end
 
         body = grammar.send(rule)
@@ -456,7 +458,7 @@ module Peg
         if skip_whitespace && start_rule
           r = Apply.new(:spaces).parse(grammar, input, false, false)
           res.nchars += r.nchars
-          input = input[r.nchars]
+          input = input[r.nchars..]
         end
 
         Success.new(NonterminalNode.new(rule, Array(res.parse_tree)), res.nchars)

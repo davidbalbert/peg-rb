@@ -11,7 +11,7 @@ module Peg
   class Builder
     class Visitor < Semantics[Parser]
       def_operation :visit do |builder|
-        def grammar(_, name, _, super_grammar, _, _, _, defs, _, _, _, _)
+        def Grammar(name, super_grammar, _, defs, _, _)
           name = name.visit(builder)
 
           if !super_grammar.children.empty?
