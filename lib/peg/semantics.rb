@@ -39,10 +39,10 @@ module Peg
 
             if op.respond_to?(name)
               action = op.method(name)
-            elsif !iteration? && children.size == 1
-              action = ->(child) { child.#{name}(#{signature.to_s}) }
             elsif nonterminal? && op.respond_to?(:_nonterminal)
               action = op.method(:_nonterminal)
+            elsif !iteration? && children.size == 1
+              action = ->(child) { child.#{name}(#{signature.to_s}) }
             else
               raise NoMethodError, "missing semantics for " + name + " for #{name}"
             end

@@ -203,14 +203,6 @@ module Peg
           s.visit(builder)
         end
 
-        def Spacing(_)
-          nil
-        end
-
-        def _non_terminal(*args)
-          nil
-        end
-
         def _terminal
           source_string
         end
