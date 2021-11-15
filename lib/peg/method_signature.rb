@@ -95,25 +95,25 @@ module Peg
       end
 
       def default_string
-        check_roundtripable!
+        check_roundtrip!
 
         default.inspect
       end
 
-      def check_roundtripable!(o=default)
+      def check_roundtrip!(o=default)
         case o
         when *ATOMS
           return
         when Array
-          o.each { |e| check_roundtripable!(e) }
+          o.each { |e| check_roundtrip!(e) }
         when Hash
           o.each do |k, v|
-            check_roundtripable!(k)
-            check_roundtripable!(v)
+            check_roundtrip!(k)
+            check_roundtrip!(v)
           end
         when Range
-          check_roundtripable!(o.begin)
-          check_roundtripable!(o.end)
+          check_roundtrip!(o.begin)
+          check_roundtrip!(o.end)
         else
           raise ArgumentError, "#{o.inspect} cannot be serialized into a string"
         end
