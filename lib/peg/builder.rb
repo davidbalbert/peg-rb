@@ -239,7 +239,7 @@ module Peg
 
     def declare_rule(name)
       grammar.class_eval do
-        rules << name
+        rules << name.intern
       end
     end
 

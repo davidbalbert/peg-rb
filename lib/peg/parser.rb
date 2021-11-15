@@ -6,6 +6,7 @@ require 'peg/runtime'
 
 class Peg::Parser < Peg::Grammar
   self.default_rule = :Grammar
+  self.rules = [:Grammar, :Definition, :InlineRules, :Expression, :NamedSequence, :NamedSequence_inline, :Sequence, :Prefix, :Prefix_and, :Prefix_not, :Suffix, :Suffix_maybe, :Suffix_star, :Suffix_plus, :Primary, :Primary_identifier, :Primary_group, :Identifier, :IdentStart, :IdentCont, :Literal, :Class, :Range, :Range_multiple, :Char, :Char_backslash, :Char_doubleQuote, :Char_singleQuote, :Char_openSquare, :Char_closeSquare, :Char_backspace, :Char_newline, :Char_carriageReturn, :Char_tab, :Char_unicode, :Char_hex, :Char_regular, :Hex, :LEFTARROW, :SLASH, :AND, :NOT, :QUERY, :STAR, :PLUS, :OPEN, :CLOSE, :DOT, :DASHES, :Spacing, :Comment, :Space, :EndOfLine, :EndOfFile]
 
   def Grammar
     Peg::Seq.new(

@@ -10,6 +10,7 @@ module Peg
       <<~RUBY
         class #{class_name} < Peg::Grammar
           self.default_rule = :#{self.class.default_rule}
+          self.rules = #{self.class.rules.inspect}
 
         #{
           self.class.rules.map do |name|

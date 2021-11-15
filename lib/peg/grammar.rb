@@ -11,6 +11,10 @@ module Peg
       @rules ||= []
     end
 
+    def self.rules=(rules)
+      @rules = rules
+    end
+
     def self.match?(input, rule: nil)
       new.match?(input, rule: rule || default_rule)
     end
