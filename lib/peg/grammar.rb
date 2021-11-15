@@ -1,5 +1,4 @@
 require 'peg/refinements'
-require 'peg/semantics'
 require 'peg/runtime'
 
 module Peg

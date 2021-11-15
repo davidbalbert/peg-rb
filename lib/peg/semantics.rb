@@ -1,6 +1,22 @@
 require 'delegate'
 
 require 'peg/method_signature'
+require 'peg/grammar'
+
+# Each Semantics has a Wrapper. This wraps parse tree nodes with the
+# methods for each of the Semantics' operations (e.g. eval, pretty_print,
+# etc.), and delegates everything else to the Node. Each Semantics has
+# multiple Operations. Each Operation wraps a Wrapper (so, two levels of
+# delegation). Operations contain methods for each Node type in the Semantics'
+# Grammar (e.g. MultExp, Number, etc.). This means that the Operation for `eval`
+# (OpEval) responds to all the methods for each Node in eval, all the methods
+# for each of the operations (e.g. eval, pretty_print), *and* all the methods
+# on the Node itself.
+#
+# If Semantics S2 subclasses S1, then S2::Wrapper subclasses S1::Wrapper. Similarly,
+# if you define an operation `eval` on S1 (S1::OpEval), and then define it again
+# on S2, S2::OpEval subclasses S1::OpEval. This allows you to use the super keyword
+# in your semantic actions.
 
 module Peg
   class Semantics
