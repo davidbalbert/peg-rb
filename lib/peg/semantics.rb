@@ -79,6 +79,10 @@ module Peg
 
     def self.inherited(subclass)
       subclass.class_eval do
+        if !Thread.current[:_peg_subclassing_semantics_with_grammar] && !const_defined?(:Grammar)
+          raise TypeError, "You cannot subclass Peg::Semantics direclty (e.g. class S < Peg::Semantics). You need to specify a Grammar (e.g. class S < Peg::Semantics[G])."
+        end
+
         const_set :Wrapper, Class.new(wrapper)
       end
     end
@@ -87,12 +91,18 @@ module Peg
       supergrammar = const_defined?(:Grammar) ? const_get(:Grammar) : Grammar
 
       unless grammar < supergrammar
-        raise ArgumentError, "#{grammar} must be a subclass of #{supergrammar}."
+        raise TypeError, "#{grammar} must be a subclass of #{supergrammar}."
       end
 
-      Class.new(self) do
+      Thread.current[:_peg_subclassing_semantics_with_grammar] = true
+
+      subclass = Class.new(self) do
         const_set(:Grammar, grammar)
       end
+
+      Thread.current[:_peg_subclassing_semantics_with_grammar] = nil
+
+      subclass
     end
 
     def self.def_operation(name, &block)
