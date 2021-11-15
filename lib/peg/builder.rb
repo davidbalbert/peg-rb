@@ -7,7 +7,7 @@ module Peg
   class Builder
     class Visitor < Semantics[Parser]
       def_operation :visit do |builder|
-        def Grammar(_, defs, _)
+        def grammar(_, defs, _)
           defs.children.each do |d|
             d.visit(builder)
           end
@@ -15,7 +15,7 @@ module Peg
           builder.grammar
         end
 
-        def Definition(n, _, rules)
+        def definition(n, _, rules)
           name = n.visit(builder)
           builder.current_rule_name = name
 
@@ -24,7 +24,7 @@ module Peg
           builder.def_rule(name, body)
         end
 
-        def InlineRules(named_seq, _, named_seqs)
+        def inlineRules(named_seq, _, named_seqs)
           alts = [named_seq.visit(builder), *named_seqs.children.map { |s| s.visit(builder) }]
 
           if alts.size == 1
@@ -34,7 +34,7 @@ module Peg
           end
         end
 
-        def Expression(seq, _, seqs)
+        def expression(seq, _, seqs)
           alts = [seq.visit(builder), *seqs.children.map { |s| s.visit(builder) }]
           if alts.size == 1
             alts.first
@@ -43,7 +43,7 @@ module Peg
           end
         end
 
-        def NamedSequence_inline(seq, _, identifier)
+        def namedSequence_inline(seq, _, identifier)
           name = builder.current_rule_name + '_' + identifier.visit(builder)
 
           builder.declare_rule(name)
@@ -52,7 +52,7 @@ module Peg
           Apply.new(name.intern)
         end
 
-        def Sequence(prefixes)
+        def sequence(prefixes)
           prefixes = prefixes.children.map { |p| p.visit(builder) }
 
           if prefixes.empty?
@@ -64,142 +64,143 @@ module Peg
           end
         end
 
-        def Prefix_and(_, suffix)
+        def prefix_and(_, suffix)
           And.new(suffix.visit(builder))
         end
 
-        def Prefix_not(_, suffix)
+        def prefix_not(_, suffix)
           Not.new(suffix.visit(builder))
         end
 
-        def Suffix_maybe(primary, _)
+        def suffix_maybe(primary, _)
           Maybe.new(primary.visit(builder))
         end
 
-        def Suffix_star(primary, _)
+        def suffix_star(primary, _)
           ZeroOrMore.new(primary.visit(builder))
         end
 
-        def Suffix_plus(primary, _)
+        def suffix_plus(primary, _)
           OneOrMore.new(primary.visit(builder))
         end
 
-        def Primary_identifier(id)
+        def primary_identifier(id)
           Apply.new(id.visit(builder).intern)
         end
 
-        def Primary_group(_, expr, _)
+        def primary_group(_, expr, _)
           expr.visit(builder)
         end
 
-        def Identifier(start, rest, _)
+        def identifier(start, rest, _)
           start.visit(builder) + rest.children.map { |c| c.visit(builder) }.join
         end
 
-        def Literal(_, chars, _, _)
+        def literal(_, chars, _, _)
           Peg::Term.new(chars.children.map { |c| c.visit(builder) }.join)
         end
 
-        def Class(_, ranges, _, _)
+        def charClass(_, ranges, _, _)
           CharSet.new(ranges.children.map { |r| r.visit(builder) }.join)
         end
 
-        def Range_multiple(c1, _, c2)
+        def range_multiple(c1, _, c2)
           (c1.visit(builder)..c2.visit(builder)).to_a.join
         end
 
-        def Char_backslash(_)
+        def char_backslash(_)
           "\\"
         end
 
-        def Char_doubleQuote(_)
+        def char_doubleQuote(_)
           '"'
         end
 
-        def Char_singleQuote(_)
+        def char_singleQuote(_)
           "'"
         end
 
-        def Char_openSquare(_)
+        def char_openSquare(_)
           "["
         end
 
-        def Char_closeSquare(_)
+        def char_closeSquare(_)
           "]"
         end
 
-        def Char_backspace(_)
+        def char_backspace(_)
           "\b"
         end
 
-        def Char_newline(_)
+        def char_newline(_)
           "\n"
         end
 
-        def Char_carriageReturn(_)
+        def char_carriageReturn(_)
           "\r"
         end
 
-        def Char_tab(_)
+        def char_tab(_)
           "\t"
         end
 
-        def Char_unicode(_, h1, h2, h3, h4)
+        def char_unicode(_, h1, h2, h3, h4)
           digits = [h1, h2, h3, h4]
           hex = "0x" + digits.map { |d| d.visit(builder) }.join
 
           hex.to_i(16).chr(Encoding::UTF_8)
         end
 
-        def Char_hex(_, h1, h2)
+        def char_hex(_, h1, h2)
+          puts 'hmm'
           ("0x" + h1.visit(builder) + h2.visit(builder)).to_i(16).chr
         end
 
-        def Char_regular(c)
+        def char_regular(c)
           c.visit(builder)
         end
 
-        def LEFTARROW(s, _)
+        def leftArrow(s, _)
           s.visit(builder)
         end
 
-        def SLASH(s, _)
+        def slash(s, _)
           s.visit(builder)
         end
 
-        def AND(s, _)
+        def and(s, _)
           s.visit(builder)
         end
 
-        def NOT(s, _)
+        def not(s, _)
           s.visit(builder)
         end
 
-        def QUERY(s, _)
+        def query(s, _)
           s.visit(builder)
         end
 
-        def STAR(s, _)
+        def star(s, _)
           s.visit(builder)
         end
 
-        def PLUS(s, _)
+        def plus(s, _)
           s.visit(builder)
         end
 
-        def OPEN(s, _)
+        def open(s, _)
           s.visit(builder)
         end
 
-        def CLOSE(s, _)
+        def close(s, _)
           s.visit(builder)
         end
 
-        def DOT(s, _)
+        def dot(s, _)
           Peg::Any.new
         end
 
-        def DASHES(s, _)
+        def dashes(s, _)
           s.visit(builder)
         end
 
