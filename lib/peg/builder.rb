@@ -92,10 +92,6 @@ module Peg
           expr.visit(builder)
         end
 
-        def Dot(_)
-          Peg::Any.new
-        end
-
         def Identifier(start, rest, _)
           start.visit(builder) + rest.children.map { |c| c.visit(builder) }.join
         end
