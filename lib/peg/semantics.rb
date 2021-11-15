@@ -44,7 +44,7 @@ module Peg
             elsif !iteration? && children.size == 1
               action = ->(child) { child.#{name}(#{signature.to_s}) }
             else
-              raise NoMethodError, "missing semantics for " + name + " for #{name}"
+              raise NoMethodError, "missing semantics for " + name.to_s + " for #{name}"
             end
 
             if iteration?
