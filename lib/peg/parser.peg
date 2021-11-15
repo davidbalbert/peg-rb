@@ -1,6 +1,6 @@
 Parser {
-  Grammar         <- identifier superGrammar? "{" definition+ "}" endOfFile
-  superGrammar    <- "<:" spacing identifier
+  Grammar         <- identifier SuperGrammar? "{" definition+ "}" endOfFile
+  SuperGrammar    <- "<:" identifier
   definition      <- identifier leftArrow inlineRules
   inlineRules     <- namedSequence ( slash namedSequence )*
   expression      <- sequence ( slash sequence )*

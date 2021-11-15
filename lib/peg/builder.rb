@@ -29,7 +29,7 @@ module Peg
           builder.grammar
         end
 
-        def superGrammar(_, _, name)
+        def SuperGrammar(_, name)
           name.visit(builder).constantize(builder.namespace)
         end
 
