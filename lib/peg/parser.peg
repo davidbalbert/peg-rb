@@ -1,7 +1,8 @@
 Parser {
   Grammar         <- identifier SuperGrammar? "{" Definition+ "}" endOfFile
   SuperGrammar    <- "<:" identifier
-  Definition      <- identifier "<-" InlineRules
+  Definition      <- identifier "<-" InlineRules -- define
+                   / identifier "+=" Expression  -- extend
   InlineRules     <- NamedSequence ( "/" NamedSequence )*
   Expression      <- Sequence ( "/" Sequence )*
   NamedSequence   <- Sequence "--" identifier -- inline

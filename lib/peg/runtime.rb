@@ -432,6 +432,30 @@ module Peg
     end
   end
 
+  class Super
+    attr_reader :rule
+
+    def initialize(rule)
+      @rule = rule
+    end
+
+    def parse(grammar, input, skip_whitespace, start_rule)
+      # use ancestors to make this work with mixins, just like
+      # the super keyword.
+      #
+      # This might need to be changed to handle a weird case if
+      # someone prepends a mixin to grammar.
+      superclass = grammer.class.ancestors[1]
+
+      m = superclass.method(rule)
+      body = m.bind(grammar).call
+
+      res = body.parse(grammar, input, skip_whitespace, false)
+
+      return res
+    end
+  end
+
   class Apply
     @@indent = 0
 

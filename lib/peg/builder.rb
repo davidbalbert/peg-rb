@@ -33,13 +33,20 @@ module Peg
           name.visit(builder).constantize(builder.namespace)
         end
 
-        def Definition(n, _, rules)
+        def Definition_define(n, _, rules)
           name = n.visit(builder)
           builder.current_rule_name = name
 
           builder.declare_rule(name)
           body = rules.visit(builder)
           builder.def_rule(name, body)
+        end
+
+        def Definition_extend(n, _, expr)
+          Choice.new(
+            expr.visit(builder),
+            Super.new(n.visit(builder)),
+          )
         end
 
         def InlineRules(named_seq, _, named_seqs)
