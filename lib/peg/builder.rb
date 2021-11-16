@@ -61,7 +61,7 @@ module Peg
           end
         end
 
-        def namedSequence_inline(seq, _, identifier)
+        def NamedSequence_inline(seq, _, identifier)
           name = builder.current_rule_name + '_' + identifier.visit(builder)
 
           builder.declare_rule(name)
@@ -70,7 +70,7 @@ module Peg
           Apply.new(name.intern)
         end
 
-        def sequence(prefixes)
+        def Sequence(prefixes)
           prefixes = prefixes.children.map { |p| p.visit(builder) }
 
           if prefixes.empty?
@@ -208,10 +208,6 @@ module Peg
 
         def dot(s, _)
           Peg::Any.new
-        end
-
-        def dashes(s, _)
-          s.visit(builder)
         end
 
         def _terminal

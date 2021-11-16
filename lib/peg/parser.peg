@@ -2,11 +2,11 @@ Parser {
   Grammar         <- identifier SuperGrammar? "{" Definition+ "}" endOfFile
   SuperGrammar    <- "<:" identifier
   Definition      <- identifier "<-" InlineRules
-  InlineRules     <- namedSequence ( "/" namedSequence )*
-  Expression      <- sequence ( "/" sequence )*
-  namedSequence   <- sequence dashes identifier -- inline
-                   / sequence
-  sequence        <- prefix*
+  InlineRules     <- NamedSequence ( "/" NamedSequence )*
+  Expression      <- Sequence ( "/" Sequence )*
+  NamedSequence   <- Sequence "--" identifier -- inline
+                   / Sequence
+  Sequence        <- prefix*
   prefix          <- and suffix -- and
                    / not suffix -- not
                    / suffix
@@ -51,7 +51,6 @@ Parser {
   open            <- '(' spacing
   close           <- ')' spacing
   dot             <- '.' spacing
-  dashes          <- '--' spacing
   spacing         <- ( space / comment )*
   comment         <- '#' ( !endOfLine . )* endOfLine
   endOfLine       <- '\r\n' / '\n' / '\r'

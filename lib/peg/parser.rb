@@ -6,7 +6,7 @@ require 'peg/runtime'
 
 class Peg::Parser < Peg::BuiltInRules
   self.default_rule = :Grammar
-  self.rules = [:Grammar, :SuperGrammar, :Definition, :InlineRules, :Expression, :namedSequence, :namedSequence_inline, :sequence, :prefix, :prefix_and, :prefix_not, :suffix, :suffix_maybe, :suffix_star, :suffix_plus, :primary, :primary_identifier, :primary_group, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :and, :not, :query, :star, :plus, :open, :close, :dot, :dashes, :spacing, :comment, :endOfLine, :endOfFile]
+  self.rules = [:Grammar, :SuperGrammar, :Definition, :InlineRules, :Expression, :NamedSequence, :NamedSequence_inline, :Sequence, :prefix, :prefix_and, :prefix_not, :suffix, :suffix_maybe, :suffix_star, :suffix_plus, :primary, :primary_identifier, :primary_group, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :and, :not, :query, :star, :plus, :open, :close, :dot, :spacing, :comment, :endOfLine, :endOfFile]
 
   def Grammar
     Peg::Seq.new(
@@ -40,11 +40,11 @@ class Peg::Parser < Peg::BuiltInRules
 
   def InlineRules
     Peg::Seq.new(
-      Peg::Apply.new(:namedSequence),
+      Peg::Apply.new(:NamedSequence),
       Peg::ZeroOrMore.new(
         Peg::Seq.new(
           Peg::Term.new("/"),
-          Peg::Apply.new(:namedSequence)
+          Peg::Apply.new(:NamedSequence)
         )
       )
     )
@@ -52,32 +52,32 @@ class Peg::Parser < Peg::BuiltInRules
 
   def Expression
     Peg::Seq.new(
-      Peg::Apply.new(:sequence),
+      Peg::Apply.new(:Sequence),
       Peg::ZeroOrMore.new(
         Peg::Seq.new(
           Peg::Term.new("/"),
-          Peg::Apply.new(:sequence)
+          Peg::Apply.new(:Sequence)
         )
       )
     )
   end
 
-  def namedSequence
+  def NamedSequence
     Peg::Choice.new(
-      Peg::Apply.new(:namedSequence_inline),
-      Peg::Apply.new(:sequence)
+      Peg::Apply.new(:NamedSequence_inline),
+      Peg::Apply.new(:Sequence)
     )
   end
 
-  def namedSequence_inline
+  def NamedSequence_inline
     Peg::Seq.new(
-      Peg::Apply.new(:sequence),
-      Peg::Apply.new(:dashes),
+      Peg::Apply.new(:Sequence),
+      Peg::Term.new("--"),
       Peg::Apply.new(:identifier)
     )
   end
 
-  def sequence
+  def Sequence
     Peg::ZeroOrMore.new(
       Peg::Apply.new(:prefix)
     )
@@ -381,13 +381,6 @@ class Peg::Parser < Peg::BuiltInRules
   def dot
     Peg::Seq.new(
       Peg::Term.new("."),
-      Peg::Apply.new(:spacing)
-    )
-  end
-
-  def dashes
-    Peg::Seq.new(
-      Peg::Term.new("--"),
       Peg::Apply.new(:spacing)
     )
   end
