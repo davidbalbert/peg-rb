@@ -6,7 +6,7 @@ require 'peg/runtime'
 
 class Peg::Parser < Peg::BuiltInRules
   self.default_rule = :Grammar
-  self.rules = [:Grammar, :SuperGrammar, :Definition, :InlineRules, :Expression, :NamedSequence, :NamedSequence_inline, :Sequence, :Prefix, :Prefix_and, :Prefix_not, :Suffix, :Suffix_maybe, :Suffix_star, :Suffix_plus, :Primary, :Primary_identifier, :Primary_group, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :dot, :spacing, :comment, :endOfLine, :endOfFile]
+  self.rules = [:Grammar, :SuperGrammar, :Definition, :InlineRules, :Expression, :NamedSequence, :NamedSequence_inline, :Sequence, :Prefix, :Prefix_and, :Prefix_not, :Suffix, :Suffix_maybe, :Suffix_star, :Suffix_plus, :Primary, :Primary_identifier, :Primary_group, :Primary_any, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :spacing, :comment, :endOfLine, :endOfFile]
 
   def Grammar
     Peg::Seq.new(
@@ -141,7 +141,7 @@ class Peg::Parser < Peg::BuiltInRules
       Peg::Apply.new(:Primary_group),
       Peg::Apply.new(:literal),
       Peg::Apply.new(:charClass),
-      Peg::Apply.new(:dot)
+      Peg::Apply.new(:Primary_any)
     )
   end
 
@@ -160,6 +160,10 @@ class Peg::Parser < Peg::BuiltInRules
       Peg::Apply.new(:Expression),
       Peg::Term.new(")")
     )
+  end
+
+  def Primary_any
+    Peg::Term.new(".")
   end
 
   def identifier
@@ -323,13 +327,6 @@ class Peg::Parser < Peg::BuiltInRules
 
   def hex
     Peg::CharSet.new("0123456789abcdefABCDEF")
-  end
-
-  def dot
-    Peg::Seq.new(
-      Peg::Term.new("."),
-      Peg::Apply.new(:spacing)
-    )
   end
 
   def spacing

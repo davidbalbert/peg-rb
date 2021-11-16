@@ -14,11 +14,11 @@ Parser {
                    / Primary "*"  -- star
                    / Primary "+"  -- plus
                    / Primary
-  Primary         <- identifier !"<-" -- identifier
+  Primary         <- identifier !"<-"   -- identifier
                    / "(" Expression ")" -- group
                    / literal
                    / charClass
-                   / dot
+                   / "."                -- any
 
   identifier      <- identStart identCont*
   identStart      <- [a-zA-Z_]
@@ -43,7 +43,6 @@ Parser {
                    / !'\\' .               -- regular
 
   hex             <- [0-9a-fA-F]
-  dot             <- '.' spacing
   spacing         <- ( space / comment )*
   comment         <- '#' ( !endOfLine . )* endOfLine
   endOfLine       <- '\r\n' / '\n' / '\r'

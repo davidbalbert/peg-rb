@@ -110,6 +110,10 @@ module Peg
           expr.visit(builder)
         end
 
+        def Primary_any(_)
+          Peg::Any.new
+        end
+
         def identifier(start, rest)
           start.visit(builder) + rest.children.map { |c| c.visit(builder) }.join
         end
@@ -176,10 +180,6 @@ module Peg
 
         def char_regular(c)
           c.visit(builder)
-        end
-
-        def dot(s, _)
-          Peg::Any.new
         end
 
         def _terminal
