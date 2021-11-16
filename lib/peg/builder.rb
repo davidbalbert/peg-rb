@@ -42,7 +42,7 @@ module Peg
           builder.def_rule(name, body)
         end
 
-        def inlineRules(named_seq, _, named_seqs)
+        def InlineRules(named_seq, _, named_seqs)
           alts = [named_seq.visit(builder), *named_seqs.children.map { |s| s.visit(builder) }]
 
           if alts.size == 1
@@ -52,7 +52,7 @@ module Peg
           end
         end
 
-        def expression(seq, _, seqs)
+        def Expression(seq, _, seqs)
           alts = [seq.visit(builder), *seqs.children.map { |s| s.visit(builder) }]
           if alts.size == 1
             alts.first
@@ -176,10 +176,6 @@ module Peg
 
         def char_regular(c)
           c.visit(builder)
-        end
-
-        def slash(s, _)
-          s.visit(builder)
         end
 
         def and(s, _)
