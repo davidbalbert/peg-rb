@@ -43,7 +43,6 @@ Parser {
                    / !'\\' .               -- regular
 
   hex             <- [0-9a-fA-F]
-  spacing         <- ( space / comment )*
   comment         <- '#' ( !endOfLine . )* endOfLine
   endOfLine       <- '\r\n' / '\n' / '\r'
   endOfFile       <- !.

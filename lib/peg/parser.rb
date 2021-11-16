@@ -6,7 +6,7 @@ require 'peg/runtime'
 
 class Peg::Parser < Peg::BuiltInRules
   self.default_rule = :Grammar
-  self.rules = [:Grammar, :SuperGrammar, :Definition, :InlineRules, :Expression, :NamedSequence, :NamedSequence_inline, :Sequence, :Prefix, :Prefix_and, :Prefix_not, :Suffix, :Suffix_maybe, :Suffix_star, :Suffix_plus, :Primary, :Primary_identifier, :Primary_group, :Primary_any, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :spacing, :comment, :endOfLine, :endOfFile]
+  self.rules = [:Grammar, :SuperGrammar, :Definition, :InlineRules, :Expression, :NamedSequence, :NamedSequence_inline, :Sequence, :Prefix, :Prefix_and, :Prefix_not, :Suffix, :Suffix_maybe, :Suffix_star, :Suffix_plus, :Primary, :Primary_identifier, :Primary_group, :Primary_any, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :comment, :endOfLine, :endOfFile]
 
   def Grammar
     Peg::Seq.new(
@@ -327,15 +327,6 @@ class Peg::Parser < Peg::BuiltInRules
 
   def hex
     Peg::CharSet.new("0123456789abcdefABCDEF")
-  end
-
-  def spacing
-    Peg::ZeroOrMore.new(
-      Peg::Choice.new(
-        Peg::Apply.new(:space),
-        Peg::Apply.new(:comment)
-      )
-    )
   end
 
   def comment
