@@ -6,7 +6,7 @@ require 'peg/runtime'
 
 class Peg::Parser < Peg::BuiltInRules
   self.default_rule = :Grammar
-  self.rules = [:Grammar, :SuperGrammar, :Definition, :InlineRules, :Expression, :NamedSequence, :NamedSequence_inline, :Sequence, :prefix, :prefix_and, :prefix_not, :suffix, :suffix_maybe, :suffix_star, :suffix_plus, :primary, :primary_identifier, :primary_group, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :and, :not, :query, :star, :plus, :open, :close, :dot, :spacing, :comment, :endOfLine, :endOfFile]
+  self.rules = [:Grammar, :SuperGrammar, :Definition, :InlineRules, :Expression, :NamedSequence, :NamedSequence_inline, :Sequence, :Prefix, :Prefix_and, :Prefix_not, :Suffix, :Suffix_maybe, :Suffix_star, :Suffix_plus, :Primary, :Primary_identifier, :Primary_group, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :dot, :spacing, :comment, :endOfLine, :endOfFile]
 
   def Grammar
     Peg::Seq.new(
@@ -79,73 +79,73 @@ class Peg::Parser < Peg::BuiltInRules
 
   def Sequence
     Peg::ZeroOrMore.new(
-      Peg::Apply.new(:prefix)
+      Peg::Apply.new(:Prefix)
     )
   end
 
-  def prefix
+  def Prefix
     Peg::Choice.new(
-      Peg::Apply.new(:prefix_and),
-      Peg::Apply.new(:prefix_not),
-      Peg::Apply.new(:suffix)
+      Peg::Apply.new(:Prefix_and),
+      Peg::Apply.new(:Prefix_not),
+      Peg::Apply.new(:Suffix)
     )
   end
 
-  def prefix_and
+  def Prefix_and
     Peg::Seq.new(
-      Peg::Apply.new(:and),
-      Peg::Apply.new(:suffix)
+      Peg::Term.new("&"),
+      Peg::Apply.new(:Suffix)
     )
   end
 
-  def prefix_not
+  def Prefix_not
     Peg::Seq.new(
-      Peg::Apply.new(:not),
-      Peg::Apply.new(:suffix)
+      Peg::Term.new("!"),
+      Peg::Apply.new(:Suffix)
     )
   end
 
-  def suffix
+  def Suffix
     Peg::Choice.new(
-      Peg::Apply.new(:suffix_maybe),
-      Peg::Apply.new(:suffix_star),
-      Peg::Apply.new(:suffix_plus),
-      Peg::Apply.new(:primary)
+      Peg::Apply.new(:Suffix_maybe),
+      Peg::Apply.new(:Suffix_star),
+      Peg::Apply.new(:Suffix_plus),
+      Peg::Apply.new(:Primary)
     )
   end
 
-  def suffix_maybe
+  def Suffix_maybe
     Peg::Seq.new(
-      Peg::Apply.new(:primary),
-      Peg::Apply.new(:query)
+      Peg::Apply.new(:Primary),
+      Peg::Term.new("?")
     )
   end
 
-  def suffix_star
+  def Suffix_star
     Peg::Seq.new(
-      Peg::Apply.new(:primary),
-      Peg::Apply.new(:star)
+      Peg::Apply.new(:Primary),
+      Peg::Term.new("*")
     )
   end
 
-  def suffix_plus
+  def Suffix_plus
     Peg::Seq.new(
-      Peg::Apply.new(:primary),
-      Peg::Apply.new(:plus)
+      Peg::Apply.new(:Primary),
+      Peg::Term.new("+")
     )
   end
 
-  def primary
+  def Primary
     Peg::Choice.new(
-      Peg::Apply.new(:primary_identifier),
-      Peg::Apply.new(:primary_group),
+      Peg::Apply.new(:Primary_identifier),
+      Peg::Apply.new(:Primary_group),
       Peg::Apply.new(:literal),
       Peg::Apply.new(:charClass),
       Peg::Apply.new(:dot)
     )
   end
 
-  def primary_identifier
+  def Primary_identifier
     Peg::Seq.new(
       Peg::Apply.new(:identifier),
       Peg::Not.new(
@@ -154,11 +154,11 @@ class Peg::Parser < Peg::BuiltInRules
     )
   end
 
-  def primary_group
+  def Primary_group
     Peg::Seq.new(
-      Peg::Apply.new(:open),
+      Peg::Term.new("("),
       Peg::Apply.new(:Expression),
-      Peg::Apply.new(:close)
+      Peg::Term.new(")")
     )
   end
 
@@ -327,55 +327,6 @@ class Peg::Parser < Peg::BuiltInRules
 
   def hex
     Peg::CharSet.new("0123456789abcdefABCDEF")
-  end
-
-  def and
-    Peg::Seq.new(
-      Peg::Term.new("&"),
-      Peg::Apply.new(:spacing)
-    )
-  end
-
-  def not
-    Peg::Seq.new(
-      Peg::Term.new("!"),
-      Peg::Apply.new(:spacing)
-    )
-  end
-
-  def query
-    Peg::Seq.new(
-      Peg::Term.new("?"),
-      Peg::Apply.new(:spacing)
-    )
-  end
-
-  def star
-    Peg::Seq.new(
-      Peg::Term.new("*"),
-      Peg::Apply.new(:spacing)
-    )
-  end
-
-  def plus
-    Peg::Seq.new(
-      Peg::Term.new("+"),
-      Peg::Apply.new(:spacing)
-    )
-  end
-
-  def open
-    Peg::Seq.new(
-      Peg::Term.new("("),
-      Peg::Apply.new(:spacing)
-    )
-  end
-
-  def close
-    Peg::Seq.new(
-      Peg::Term.new(")"),
-      Peg::Apply.new(:spacing)
-    )
   end
 
   def dot

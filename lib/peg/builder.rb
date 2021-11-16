@@ -82,31 +82,31 @@ module Peg
           end
         end
 
-        def prefix_and(_, suffix)
+        def Prefix_and(_, suffix)
           And.new(suffix.visit(builder))
         end
 
-        def prefix_not(_, suffix)
+        def Prefix_not(_, suffix)
           Not.new(suffix.visit(builder))
         end
 
-        def suffix_maybe(primary, _)
+        def Suffix_maybe(primary, _)
           Maybe.new(primary.visit(builder))
         end
 
-        def suffix_star(primary, _)
+        def Suffix_star(primary, _)
           ZeroOrMore.new(primary.visit(builder))
         end
 
-        def suffix_plus(primary, _)
+        def Suffix_plus(primary, _)
           OneOrMore.new(primary.visit(builder))
         end
 
-        def primary_identifier(id)
+        def Primary_identifier(id)
           Apply.new(id.visit(builder).intern)
         end
 
-        def primary_group(_, expr, _)
+        def Primary_group(_, expr, _)
           expr.visit(builder)
         end
 
@@ -176,34 +176,6 @@ module Peg
 
         def char_regular(c)
           c.visit(builder)
-        end
-
-        def and(s, _)
-          s.visit(builder)
-        end
-
-        def not(s, _)
-          s.visit(builder)
-        end
-
-        def query(s, _)
-          s.visit(builder)
-        end
-
-        def star(s, _)
-          s.visit(builder)
-        end
-
-        def plus(s, _)
-          s.visit(builder)
-        end
-
-        def open(s, _)
-          s.visit(builder)
-        end
-
-        def close(s, _)
-          s.visit(builder)
         end
 
         def dot(s, _)

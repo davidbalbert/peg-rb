@@ -6,16 +6,16 @@ Parser {
   Expression      <- Sequence ( "/" Sequence )*
   NamedSequence   <- Sequence "--" identifier -- inline
                    / Sequence
-  Sequence        <- prefix*
-  prefix          <- and suffix -- and
-                   / not suffix -- not
-                   / suffix
-  suffix          <- primary query -- maybe
-                   / primary star  -- star
-                   / primary plus  -- plus
-                   / primary
-  primary         <- identifier !"<-" -- identifier
-                   / open Expression close -- group
+  Sequence        <- Prefix*
+  Prefix          <- "&" Suffix -- and
+                   / "!" Suffix -- not
+                   / Suffix
+  Suffix          <- Primary "?"  -- maybe
+                   / Primary "*"  -- star
+                   / Primary "+"  -- plus
+                   / Primary
+  Primary         <- identifier !"<-" -- identifier
+                   / "(" Expression ")" -- group
                    / literal
                    / charClass
                    / dot
@@ -43,13 +43,6 @@ Parser {
                    / !'\\' .               -- regular
 
   hex             <- [0-9a-fA-F]
-  and             <- '&' spacing
-  not             <- '!' spacing
-  query           <- '?' spacing
-  star            <- '*' spacing
-  plus            <- '+' spacing
-  open            <- '(' spacing
-  close           <- ')' spacing
   dot             <- '.' spacing
   spacing         <- ( space / comment )*
   comment         <- '#' ( !endOfLine . )* endOfLine
