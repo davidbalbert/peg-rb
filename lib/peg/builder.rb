@@ -114,11 +114,11 @@ module Peg
           start.visit(builder) + rest.children.map { |c| c.visit(builder) }.join
         end
 
-        def literal(_, chars, _, _)
+        def literal(_, chars, _)
           Term.new(chars.children.map { |c| c.visit(builder) }.join)
         end
 
-        def charClass(_, ranges, _, _)
+        def charClass(_, ranges, _)
           CharSet.new(ranges.children.map { |r| r.visit(builder) }.join)
         end
 

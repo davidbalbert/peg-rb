@@ -23,9 +23,9 @@ Parser {
   identifier      <- identStart identCont*
   identStart      <- [a-zA-Z_]
   identCont       <- identStart / [0-9]
-  literal         <- ['] ( !['] char  )* ['] spacing
-                   / ["] ( !["] char  )* ["] spacing
-  charClass       <- '[' ( !']' range )* ']' spacing
+  literal         <- ['] ( !['] char  )* [']
+                   / ["] ( !["] char  )* ["]
+  charClass       <- '[' ( !']' range )* ']'
   range           <- char '-' char -- multiple
                    / char
 

@@ -194,8 +194,7 @@ class Peg::Parser < Peg::BuiltInRules
             Peg::Apply.new(:char)
           )
         ),
-        Peg::CharSet.new("'"),
-        Peg::Apply.new(:spacing)
+        Peg::CharSet.new("'")
       ),
       Peg::Seq.new(
         Peg::CharSet.new("\""),
@@ -207,8 +206,7 @@ class Peg::Parser < Peg::BuiltInRules
             Peg::Apply.new(:char)
           )
         ),
-        Peg::CharSet.new("\""),
-        Peg::Apply.new(:spacing)
+        Peg::CharSet.new("\"")
       )
     )
   end
@@ -224,8 +222,7 @@ class Peg::Parser < Peg::BuiltInRules
           Peg::Apply.new(:range)
         )
       ),
-      Peg::Term.new("]"),
-      Peg::Apply.new(:spacing)
+      Peg::Term.new("]")
     )
   end
 
