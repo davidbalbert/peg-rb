@@ -178,10 +178,6 @@ module Peg
           c.visit(builder)
         end
 
-        def leftArrow(s, _)
-          s.visit(builder)
-        end
-
         def slash(s, _)
           s.visit(builder)
         end
