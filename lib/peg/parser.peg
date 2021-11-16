@@ -20,7 +20,7 @@ Parser {
                    / charClass
                    / dot
 
-  identifier      <- identStart identCont* spacing
+  identifier      <- identStart identCont*
   identStart      <- [a-zA-Z_]
   identCont       <- identStart / [0-9]
   literal         <- ['] ( !['] char  )* ['] spacing

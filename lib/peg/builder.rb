@@ -110,7 +110,7 @@ module Peg
           expr.visit(builder)
         end
 
-        def identifier(start, rest, _)
+        def identifier(start, rest)
           start.visit(builder) + rest.children.map { |c| c.visit(builder) }.join
         end
 

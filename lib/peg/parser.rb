@@ -167,8 +167,7 @@ class Peg::Parser < Peg::BuiltInRules
       Peg::Apply.new(:identStart),
       Peg::ZeroOrMore.new(
         Peg::Apply.new(:identCont)
-      ),
-      Peg::Apply.new(:spacing)
+      )
     )
   end
 
