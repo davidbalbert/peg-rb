@@ -58,9 +58,9 @@ module Peg
 
       attr_reader :_semantics
 
-      def initialize(o, algebra)
+      def initialize(o, semantics)
         super(o)
-        @_semantics = algebra
+        @_semantics = semantics
       end
 
       def children
