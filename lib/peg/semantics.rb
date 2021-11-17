@@ -35,7 +35,7 @@ module Peg
           def #{name}(#{signature.to_s})
             #{params.map { |n| "@#{n} = #{n}" }.join("\n") }
 
-            op = _algebra.#{accessor}.new(self)
+            op = _semantics.#{accessor}.new(self)
 
             if op.respond_to?(name)
               action = op.method(name)
@@ -56,16 +56,16 @@ module Peg
         RUBY
       end
 
-      attr_reader :_algebra
+      attr_reader :_semantics
 
       def initialize(o, algebra)
         super(o)
-        @_algebra = algebra
+        @_semantics = algebra
       end
 
       def children
         super.map do |child|
-          self.class.new(child, _algebra)
+          self.class.new(child, _semantics)
         end
       end
     end
