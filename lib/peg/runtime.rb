@@ -76,10 +76,6 @@ module Peg
       @source_string = ""
     end
 
-    def arity
-      children.size
-    end
-
     def name
       "_iter"
     end

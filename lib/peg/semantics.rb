@@ -68,6 +68,10 @@ module Peg
           self.class.new(child, _semantics)
         end
       end
+
+      def child(i)
+        children[i]
+      end
     end
 
     class Operation < SimpleDelegator
