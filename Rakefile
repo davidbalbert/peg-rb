@@ -1,4 +1,5 @@
 require "rake/testtask"
+require "bundler/gem_tasks"
 
 task default: "lib/peg/parser.rb"
 

@@ -1,3 +1,8 @@
+PATH
+  remote: .
+  specs:
+    peg (0.1.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -19,6 +24,7 @@ PLATFORMS
 
 DEPENDENCIES
   minitest
+  peg!
   pry
   pry-doc
   rake
