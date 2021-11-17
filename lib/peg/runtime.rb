@@ -445,9 +445,9 @@ module Peg
       #
       # This might need to be changed to handle a weird case if
       # someone prepends a mixin to grammar.
-      superclass = grammer.class.ancestors[1]
+      superclass = grammar.class.ancestors[1]
 
-      m = superclass.method(rule)
+      m = superclass.instance_method(rule)
       body = m.bind(grammar).call
 
       res = body.parse(grammar, input, skip_whitespace, false)
