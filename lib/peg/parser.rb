@@ -165,6 +165,9 @@ class Peg::Parser < Peg::BuiltInRules
       Peg::Apply.new(:identifier),
       Peg::Not.new(
         Peg::Term.new("<-")
+      ),
+      Peg::Not.new(
+        Peg::Term.new("+=")
       )
     )
   end

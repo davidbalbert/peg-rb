@@ -466,39 +466,25 @@ module Peg
     end
 
     def parse(grammar, input, skip_whitespace, start_rule)
-      debug(input) do
-        skip_whitespace = rule.to_s[0].match?(/\A[[:upper:]]\z/)
+      skip_whitespace = rule.to_s[0].match?(/\A[[:upper:]]\z/)
 
-        if skip_whitespace
-          res = Apply.new(:spaces).parse(grammar, input, false, false)
-          input = input[res.nchars..]
-        end
-
-        body = grammar.send(rule)
-        res = body.parse(grammar, input, skip_whitespace, false)
-
-        return res if res.fail?
-
-        if skip_whitespace && start_rule
-          r = Apply.new(:spaces).parse(grammar, input, false, false)
-          res.nchars += r.nchars
-          input = input[r.nchars..]
-        end
-
-        Success.new(NonterminalNode.new(rule, Array(res.parse_tree)), res.nchars)
+      if skip_whitespace
+        res = Apply.new(:spaces).parse(grammar, input, false, false)
+        input = input[res.nchars..]
       end
-    end
 
-    def debug(input)
-      return yield unless Peg.debug
+      body = grammar.send(rule)
+      res = body.parse(grammar, input, skip_whitespace, false)
 
-      puts " "*@@indent + "> Apply #{rule} -" + " "*(80-@@indent - rule.size) + input[0..input.index("\n")].inspect
+      return res if res.fail?
 
-      @@indent += 2
-      res = yield
-      @@indent -= 2
+      if skip_whitespace && start_rule
+        r = Apply.new(:spaces).parse(grammar, input, false, false)
+        res.nchars += r.nchars
+        input = input[r.nchars..]
+      end
 
-      res
+      Success.new(NonterminalNode.new(rule, Array(res.parse_tree)), res.nchars)
     end
 
     def arity

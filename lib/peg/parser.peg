@@ -15,7 +15,7 @@ Parser {
                    / Primary "*"  -- star
                    / Primary "+"  -- plus
                    / Primary
-  Primary         <- identifier !"<-"   -- identifier
+  Primary         <- identifier !"<-" !"+="  -- identifier
                    / "(" Expression ")" -- group
                    / literal
                    / charClass
@@ -44,6 +44,7 @@ Parser {
                    / !'\\' .               -- regular
 
   hex             <- [0-9a-fA-F]
+  space           += comment
   comment         <- '#' ( !endOfLine . )* endOfLine
   endOfLine       <- '\r\n' / '\n' / '\r'
   endOfFile       <- !.
