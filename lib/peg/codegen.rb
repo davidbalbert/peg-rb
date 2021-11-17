@@ -130,6 +130,14 @@ module Peg
     end
   end
 
+  class Super
+    def to_rb
+      <<~RUBY
+        Peg::Super.new(:#{rule})
+      RUBY
+    end
+  end
+
   class Apply
     def to_rb
       <<~RUBY

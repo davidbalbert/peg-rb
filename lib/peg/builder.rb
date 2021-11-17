@@ -43,10 +43,16 @@ module Peg
         end
 
         def Definition_extend(n, _, expr)
-          Choice.new(
+          name = n.visit(builder)
+
+          builder.declare_rule(name)
+
+          body = Choice.new(
             expr.visit(builder),
-            Super.new(n.visit(builder)),
+            Super.new(name),
           )
+
+          builder.def_rule(name, body)
         end
 
         def InlineRules(named_seq, _, named_seqs)
