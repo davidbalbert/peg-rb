@@ -16,10 +16,10 @@ Parser {
                    / Primary "+"  -- plus
                    / Primary
   Primary         <- identifier !"<-" !"+="  -- identifier
-                   / "(" Expression ")" -- group
+                   / "(" Expression ")"      -- group
                    / literal
                    / charClass
-                   / "."                -- any
+                   / "."                     -- any
 
   identifier      <- identStart identCont*
   identStart      <- [a-zA-Z_]
