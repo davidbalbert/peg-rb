@@ -28,7 +28,7 @@ module Peg
     end
 
     def parse(input, rule:)
-      Apply.new(rule).parse(self, input, false, true)
+      Apply.new(rule).parse(self, InputStream.new(input), false, true)
     end
   end
 end

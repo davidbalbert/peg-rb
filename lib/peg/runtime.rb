@@ -105,6 +105,46 @@ module Peg
     end
   end
 
+  class InputStream
+    def initialize(s)
+      @s = s
+      @pos = 0
+    end
+
+    def mark
+      @pos
+    end
+
+    def reset(pos)
+      @pos = pos
+    end
+
+    def getc
+      c = @s[@pos]
+      @pos += 1 unless c.nil?
+
+      c
+    end
+
+    def empty?
+      @pos == @s.size
+    end
+
+    def size
+      @s.size - @pos
+    end
+
+    def start_with?(value)
+      value.chars.each do |c|
+        if c != getc
+          return false
+        end
+      end
+
+      true
+    end
+  end
+
   Success = Struct.new(:parse_tree, :nchars) do
     def success?
       true
@@ -163,7 +203,6 @@ module Peg
         if skip_whitespace
           r = Apply.new(:spaces).parse(grammar, input, false, false)
           res.nchars += r.nchars
-          input = input[r.nchars..]
         end
 
         r = e.parse(grammar, input, skip_whitespace, false)
@@ -172,7 +211,6 @@ module Peg
 
         res.parse_tree.concat Array(r.parse_tree)
         res.nchars += r.nchars
-        input = input[r.nchars..]
       end
 
       res
@@ -192,9 +230,13 @@ module Peg
 
     def parse(grammar, input, skip_whitespace, start_rule)
       options.each do |opt|
+        mark = input.mark
+
         if (res = opt.parse(grammar, input, skip_whitespace, false)).success?
           return res
         end
+
+        input.reset(mark)
       end
 
       Failure.new
@@ -216,8 +258,10 @@ module Peg
     def parse(grammar, input, skip_whitespace, start_rule)
       return Failure.new if input.empty?
 
-      if chars.include?(input[0])
-        Success.new(TerminalNode.new(input[0]), 1)
+      c = input.getc
+
+      if chars.include?(c)
+        Success.new(TerminalNode.new(c), 1)
       else
         Failure.new
       end
@@ -240,15 +284,20 @@ module Peg
       res = Success.new(nodes, 0)
 
       loop do
+        nskipped = 0
+        mark = input.mark
+
         if skip_whitespace
           r = Apply.new(:spaces).parse(grammar, input, false, false)
-          res.nchars += r.nchars
-          input = input[r.nchars..]
+          nskipped = r.nchars
         end
 
         r = expr.parse(grammar, input, skip_whitespace, false)
 
-        return res unless r.success?
+        if r.fail?
+          input.reset(mark)
+          return res
+        end
 
         results = Array(r.parse_tree)
         raise "results.size != nodes.size" unless results.size == res.parse_tree.size
@@ -261,8 +310,7 @@ module Peg
           iter.source_string << results.map(&:source_string).join
         end
 
-        res.nchars += r.nchars
-        input = input[r.nchars..]
+        res.nchars += r.nchars + nskipped
       end
     end
 
@@ -285,16 +333,19 @@ module Peg
 
       loop do
         nskipped = 0
+        mark = input.mark
 
         if skip_whitespace
           r = Apply.new(:spaces).parse(grammar, input, false, false)
-          skipped = r.nchars
-          input = input[r.nchars..]
+          nskipped = r.nchars
         end
 
         r = expr.parse(grammar, input, skip_whitespace, false)
 
-        return res unless r.success?
+        if r.fail?
+          input.reset(mark)
+          return res
+        end
 
         res = Success.new(nodes, 0) if res.fail?
         results = Array(r.parse_tree)
@@ -309,7 +360,6 @@ module Peg
         end
 
         res.nchars += r.nchars + nskipped
-        input = input[r.nchars..]
       end
     end
 
@@ -329,10 +379,12 @@ module Peg
       nodes = expr.arity.times.map { IterationNode.new }
       res = Success.new(nodes, 0)
 
+      nskipped = 0
+      mark = input.mark
+
       if skip_whitespace
         r = Apply.new(:spaces).parse(grammar, input, false, false)
-        res.nchars += r.nchars
-        input = input[r.nchars..]
+        nskipped = r.nchars
       end
 
       if (r = expr.parse(grammar, input, skip_whitespace, false)).success?
@@ -347,7 +399,9 @@ module Peg
           iter.source_string << results.map(&:source_string).join
         end
 
-        res.nchars += r.nchars
+        res.nchars += r.nchars + nskipped
+      else
+        input.reset(mark)
       end
 
       res
@@ -361,7 +415,7 @@ module Peg
   class Any
     def parse(grammar, input, skip_whitespace, start_rule)
       if input.size > 0
-        Success.new(TerminalNode.new(input[0]), 1)
+        Success.new(TerminalNode.new(input.getc), 1)
       else
         Failure.new
       end
@@ -392,7 +446,9 @@ module Peg
     end
 
     def parse(grammar, input, skip_whitespace, start_rule)
+      mark = input.mark
       res = expr.parse(grammar, input, skip_whitespace, false)
+      input.reset(mark)
 
       if res.success?
         Success.new(nil, 0)
@@ -414,7 +470,9 @@ module Peg
     end
 
     def parse(grammar, input, skip_whitespace, start_rule)
+      mark = input.mark
       res = expr.parse(grammar, input, skip_whitespace, false)
+      input.reset(mark)
 
       if res.success?
         Failure.new
@@ -436,7 +494,7 @@ module Peg
     end
 
     def parse(grammar, input, skip_whitespace, start_rule)
-      # use ancestors to make this work with mixins, just like
+      # Use ancestors to make this work with mixins, just like
       # the super keyword.
       #
       # This might need to be changed to handle a weird case if
@@ -466,7 +524,6 @@ module Peg
 
       if skip_whitespace
         res = Apply.new(:spaces).parse(grammar, input, false, false)
-        input = input[res.nchars..]
       end
 
       body = grammar.send(rule)
@@ -477,7 +534,6 @@ module Peg
       if skip_whitespace && start_rule
         r = Apply.new(:spaces).parse(grammar, input, false, false)
         res.nchars += r.nchars
-        input = input[r.nchars..]
       end
 
       Success.new(NonterminalNode.new(rule, Array(res.parse_tree)), res.nchars)
