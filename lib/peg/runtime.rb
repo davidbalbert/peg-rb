@@ -1,11 +1,11 @@
 module Peg
   class NonterminalNode
-    attr_reader :name, :children, :slice
+    attr_reader :name, :children, :contents
 
-    def initialize(name, children, slice)
+    def initialize(name, children, contents)
       @name = name
       @children = children
-      @slice = slice
+      @contents = contents
     end
 
     def terminal?
@@ -21,7 +21,7 @@ module Peg
     end
 
     def source_string
-      slice.contents
+      contents.to_s
     end
 
     def pretty_print(pp)
@@ -38,14 +38,14 @@ module Peg
   end
 
   class TerminalNode
-    attr_reader :slice
+    attr_reader :contents
 
-    def initialize(slice)
-      @slice = slice
+    def initialize(contents)
+      @contents = contents
     end
 
     def source_string
-      slice.contents
+      contents.to_s
     end
 
     def name
@@ -70,17 +70,17 @@ module Peg
 
     def pretty_print(pp)
       pp.text "(_terminal "
-      pp.pp(slice.contents)
+      pp.pp(source_string)
       pp.text ")"
     end
   end
 
   class IterationNode
-    attr_reader :children, :slice
+    attr_reader :children, :contents
 
-    def initialize(children, slice)
+    def initialize(children, contents)
       @children = children
-      @slice = slice
+      @contents = contents
     end
 
     def name
@@ -100,7 +100,7 @@ module Peg
     end
 
     def source_string
-      slice.contents
+      contents.to_s
     end
 
     def pretty_print(pp)
@@ -145,7 +145,7 @@ module Peg
 
     def eval(state)
       if state.input.start_with?(value)
-        state.push(TerminalNode.new(state.current_slice))
+        state.push(TerminalNode.new(state.current_substring))
         true
       else
         false
@@ -225,7 +225,7 @@ module Peg
       return false if state.input.empty?
 
       if chars.include?(state.input.getc)
-        state.push(TerminalNode.new(state.current_slice))
+        state.push(TerminalNode.new(state.current_substring))
         true
       else
         false
@@ -268,7 +268,7 @@ module Peg
       end
 
       cols.each do |col|
-        state.push(IterationNode.new(col, state.current_slice))
+        state.push(IterationNode.new(col, state.current_substring))
       end
 
       true
@@ -305,7 +305,7 @@ module Peg
     def eval(state)
       if state.input.size > 0
         state.input.getc
-        state.push(TerminalNode.new(state.current_slice))
+        state.push(TerminalNode.new(state.current_substring))
         true
       else
         false
@@ -420,7 +420,7 @@ module Peg
 
         if state.eval(body)
           bindings = state.pop(body.arity)
-          state.push(NonterminalNode.new(rule, bindings, state.current_slice))
+          state.push(NonterminalNode.new(rule, bindings, state.current_substring))
 
           true
         else

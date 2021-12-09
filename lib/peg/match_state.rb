@@ -87,12 +87,14 @@ module Peg
       if expr == start_expr && expr.skip_space? && expr != Spaces
         eval(Spaces)
         pop
+
+        # TODO: we should really extend the last substring to cover up to input.pos
       end
 
       res
     end
 
-    def current_slice
+    def current_substring
       input[start_pos...input.pos]
     end
 

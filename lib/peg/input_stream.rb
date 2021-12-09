@@ -1,5 +1,5 @@
 module Peg
-  class Slice
+  class Substring
     attr_reader :source, :range
 
     def initialize(source, range)
@@ -7,12 +7,12 @@ module Peg
       @range = range
     end
 
-    def contents
-      @contents ||= source[range]
+    def to_s
+      @s ||= source[range]
     end
 
     def inspect
-      "#<Peg::Slice @range=#{range.inspect}>"
+      "#<Peg::Substring @range=#{range.inspect}>"
     end
   end
 
@@ -44,15 +44,7 @@ module Peg
     end
 
     def [](range)
-      Slice.new(@s, range)
-    end
-
-    def slice_to_current(start)
-      self[start...@pos]
-    end
-
-    def until_next_newline
-      @s[@pos..@s.index("\n", @pos)].chomp
+      Substring.new(@s, range)
     end
 
     def start_with?(value)
