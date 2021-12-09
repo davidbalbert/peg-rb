@@ -34,11 +34,14 @@ module Peg
   end
 
   class TerminalNode
-    attr_reader :value
-    alias source_string value
+    attr_reader :slice
 
-    def initialize(value)
-      @value = value
+    def initialize(slice)
+      @slice = slice
+    end
+
+    def source_string
+      slice.contents
     end
 
     def name
@@ -63,7 +66,7 @@ module Peg
 
     def pretty_print(pp)
       pp.text "(_terminal "
-      pp.pp(value)
+      pp.pp(slice.contents)
       pp.text ")"
     end
   end
@@ -105,48 +108,6 @@ module Peg
     end
   end
 
-  class InputStream
-    attr_reader :pos
-
-    def initialize(s)
-      @s = s
-      @pos = 0
-    end
-
-    def mark
-      @pos
-    end
-
-    def reset(pos)
-      @pos = pos
-    end
-
-    def getc
-      c = @s[@pos]
-      @pos += 1 unless c.nil?
-
-      c
-    end
-
-    def empty?
-      @pos == @s.size
-    end
-
-    def size
-      @s.size - @pos
-    end
-
-    def start_with?(value)
-      value.chars.each do |c|
-        if c != getc
-          return false
-        end
-      end
-
-      true
-    end
-  end
-
   Success = Struct.new(:parse_tree) do
     def success?
       true
@@ -176,7 +137,7 @@ module Peg
 
     def eval(state)
       if state.input.start_with?(value)
-        state.push(TerminalNode.new(value))
+        state.push(TerminalNode.new(state.current_slice))
         true
       else
         false
@@ -255,10 +216,8 @@ module Peg
     def eval(state)
       return false if state.input.empty?
 
-      c = state.input.getc
-
-      if chars.include?(c)
-        state.push(TerminalNode.new(c))
+      if chars.include?(state.input.getc)
+        state.push(TerminalNode.new(state.current_slice))
         true
       else
         false
@@ -340,7 +299,8 @@ module Peg
   class Any
     def eval(state)
       if state.input.size > 0
-        state.push(TerminalNode.new(state.input.getc))
+        state.input.getc
+        state.push(TerminalNode.new(state.current_slice))
         true
       else
         false
@@ -450,6 +410,11 @@ module Peg
     end
 
     def eval(state)
+      if rule == :identifier
+        start_pos = state.input.pos
+        puts "before identifier #{start_pos}"
+      end
+
       state.applying(self) do
         body = state.current_body
 
@@ -462,6 +427,8 @@ module Peg
           false
         end
       end
+    ensure
+      puts "after identifier #{state.input.pos - start_pos}" if rule == :identifier
     end
 
     def syntactic?

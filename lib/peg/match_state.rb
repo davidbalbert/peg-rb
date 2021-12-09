@@ -1,6 +1,8 @@
+require 'peg/input_stream'
+
 module Peg
   class MatchState
-    attr_reader :grammar, :input, :start_expr, :bindings, :applications
+    attr_reader :grammar, :input, :start_expr, :bindings, :applications, :start_pos_stack
 
     def initialize(grammar, input, start_expr)
       @grammar = grammar
@@ -8,6 +10,7 @@ module Peg
       @start_expr = start_expr
       @bindings = []
       @applications = []
+      @start_pos_stack = []
     end
 
     def result
@@ -28,6 +31,10 @@ module Peg
 
     def current_application
       applications.last
+    end
+
+    def start_pos
+      start_pos_stack.last
     end
 
     def current_body
@@ -56,7 +63,7 @@ module Peg
     Spaces = Apply.new(:spaces)
 
     def eval(expr)
-      pos = input.pos
+      start_pos_stack.push(input.pos)
       nbindings = bindings.size
 
       if syntactic? && expr.skip_space? && expr != Spaces
@@ -67,7 +74,7 @@ module Peg
       res = expr.eval(self)
 
       if !res
-        input.reset(pos)
+        input.reset(start_pos)
         pop(bindings.size-nbindings)
       end
 
@@ -76,7 +83,13 @@ module Peg
         pop
       end
 
+      start_pos_stack.pop
+
       res
+    end
+
+    def current_slice
+      input[start_pos...input.pos]
     end
 
     def push(*bs)
