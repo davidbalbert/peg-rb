@@ -63,7 +63,6 @@ module Peg
     Spaces = Apply.new(:spaces)
 
     def eval(expr)
-      start_pos_stack.push(input.pos)
       nbindings = bindings.size
 
       if syntactic? && expr.skip_space? && expr != Spaces
@@ -71,6 +70,7 @@ module Peg
         pop
       end
 
+      start_pos_stack.push(input.pos)
       res = expr.eval(self)
 
       if !res
@@ -78,12 +78,16 @@ module Peg
         pop(bindings.size-nbindings)
       end
 
+      start_pos_stack.pop
+
+      if !res
+        return
+      end
+
       if expr == start_expr && expr.skip_space? && expr != Spaces
         eval(Spaces)
         pop
       end
-
-      start_pos_stack.pop
 
       res
     end

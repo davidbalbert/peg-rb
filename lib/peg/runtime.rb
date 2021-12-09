@@ -1,11 +1,11 @@
 module Peg
   class NonterminalNode
-    attr_reader :name, :children, :source_string
+    attr_reader :name, :children, :slice
 
-    def initialize(name, children)
+    def initialize(name, children, slice)
       @name = name
       @children = children
-      @source_string = children.map(&:source_string).join
+      @slice = slice
     end
 
     def terminal?
@@ -18,6 +18,10 @@ module Peg
 
     def iteration?
       false
+    end
+
+    def source_string
+      slice.contents
     end
 
     def pretty_print(pp)
@@ -72,11 +76,11 @@ module Peg
   end
 
   class IterationNode
-    attr_reader :children, :source_string
+    attr_reader :children, :slice
 
-    def initialize(children, source_string)
+    def initialize(children, slice)
       @children = children
-      @source_string = source_string
+      @slice = slice
     end
 
     def name
@@ -93,6 +97,10 @@ module Peg
 
     def iteration?
       true
+    end
+
+    def source_string
+      slice.contents
     end
 
     def pretty_print(pp)
@@ -243,7 +251,6 @@ module Peg
     def eval(state)
       matches = 0
       cols = arity.times.map { [] }
-      source_string = ""
 
       while matches < range.end && state.eval(expr)
         bindings = state.pop(arity)
@@ -251,8 +258,6 @@ module Peg
         cols.zip(bindings).each do |col, b|
           col << b
         end
-
-        source_string << bindings.map(&:source_string).join
 
         matches += 1
         last_pos = state.input.pos
@@ -263,7 +268,7 @@ module Peg
       end
 
       cols.each do |col|
-        state.push(IterationNode.new(col, source_string))
+        state.push(IterationNode.new(col, state.current_slice))
       end
 
       true
@@ -410,25 +415,18 @@ module Peg
     end
 
     def eval(state)
-      if rule == :identifier
-        start_pos = state.input.pos
-        puts "before identifier #{start_pos}"
-      end
-
       state.applying(self) do
         body = state.current_body
 
         if state.eval(body)
           bindings = state.pop(body.arity)
-          state.push(NonterminalNode.new(rule, bindings))
+          state.push(NonterminalNode.new(rule, bindings, state.current_slice))
 
           true
         else
           false
         end
       end
-    ensure
-      puts "after identifier #{state.input.pos - start_pos}" if rule == :identifier
     end
 
     def syntactic?
