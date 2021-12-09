@@ -71,9 +71,9 @@ module Peg
   class IterationNode
     attr_reader :children, :source_string
 
-    def initialize
-      @children = []
-      @source_string = ""
+    def initialize(children, source_string)
+      @children = children
+      @source_string = source_string
     end
 
     def name
@@ -106,6 +106,8 @@ module Peg
   end
 
   class InputStream
+    attr_reader :pos
+
     def initialize(s)
       @s = s
       @pos = 0
@@ -172,16 +174,21 @@ module Peg
       @value = value
     end
 
-    def parse(grammar, input, skip_whitespace, start_rule)
-      if input.start_with?(value)
-        Success.new(TerminalNode.new(value))
+    def parse(state)
+      if state.input.start_with?(value)
+        state.push(TerminalNode.new(value))
+        true
       else
-        Failure.new
+        false
       end
     end
 
     def arity
       1
+    end
+
+    def skip_space?
+      true
     end
   end
 
@@ -192,26 +199,22 @@ module Peg
       @exprs = exprs
     end
 
-    def parse(grammar, input, skip_whitespace, start_rule)
-      res = Success.new([])
-
+    def parse(state)
       exprs.each do |e|
-        if skip_whitespace
-          r = Apply.new(:spaces).parse(grammar, input, false, false)
+        unless state.eval(e)
+          return false
         end
-
-        r = e.parse(grammar, input, skip_whitespace, false)
-
-        return Failure.new unless r.success?
-
-        res.parse_tree.concat Array(r.parse_tree)
       end
 
-      res
+      true
     end
 
     def arity
       exprs.map(&:arity).sum
+    end
+
+    def skip_space?
+      false
     end
   end
 
@@ -222,23 +225,23 @@ module Peg
       @options = options
     end
 
-    def parse(grammar, input, skip_whitespace, start_rule)
+    def parse(state)
       options.each do |opt|
-        mark = input.mark
-
-        if (res = opt.parse(grammar, input, skip_whitespace, false)).success?
-          return res
+        if state.eval(opt)
+          return true
         end
-
-        input.reset(mark)
       end
 
-      Failure.new
+      false
     end
 
     def arity
       # TODO: ensure all options have the same arity
       options.size == 0 ? 0 : options.first.arity
+    end
+
+    def skip_space?
+      false
     end
   end
 
@@ -249,174 +252,123 @@ module Peg
       @chars = chars
     end
 
-    def parse(grammar, input, skip_whitespace, start_rule)
-      return Failure.new if input.empty?
+    def parse(state)
+      return false if state.input.empty?
 
-      c = input.getc
+      c = state.input.getc
 
       if chars.include?(c)
-        Success.new(TerminalNode.new(c))
+        state.push(TerminalNode.new(c))
+        true
       else
-        Failure.new
+        false
       end
     end
 
     def arity
       1
     end
+
+    def skip_space?
+      true
+    end
   end
 
-  class ZeroOrMore
+  class Iter
     attr_reader :expr
 
     def initialize(expr)
       @expr = expr
     end
 
-    def parse(grammar, input, skip_whitespace, start_rule)
-      nodes = expr.arity.times.map { IterationNode.new }
-      res = Success.new(nodes)
+    def parse(state)
+      matches = 0
+      cols = arity.times.map { [] }
+      source_string = ""
 
-      loop do
-        mark = input.mark
+      while matches < range.end && state.eval(expr)
+        bindings = state.pop(arity)
 
-        if skip_whitespace
-          r = Apply.new(:spaces).parse(grammar, input, false, false)
+        cols.zip(bindings).each do |col, b|
+          col << b
         end
 
-        r = expr.parse(grammar, input, skip_whitespace, false)
+        source_string << bindings.map(&:source_string).join
 
-        if r.fail?
-          input.reset(mark)
-          return res
-        end
-
-        results = Array(r.parse_tree)
-        raise "results.size != nodes.size" unless results.size == res.parse_tree.size
-
-        res.parse_tree.zip(results) do |iter, result|
-          iter.children << result
-        end
-
-        res.parse_tree.each do |iter|
-          iter.source_string << results.map(&:source_string).join
-        end
+        matches += 1
+        last_pos = state.input.pos
       end
+
+      if matches < range.begin
+        return false
+      end
+
+      cols.each do |col|
+        state.push(IterationNode.new(col, source_string))
+      end
+
+      true
     end
 
     def arity
       expr.arity
+    end
+
+    def skip_space?
+      false
     end
   end
 
-  class OneOrMore
-    attr_reader :expr
-
-    def initialize(expr)
-      @expr = expr
-    end
-
-    def parse(grammar, input, skip_whitespace, start_rule)
-      res = Failure.new
-
-      nodes = expr.arity.times.map { IterationNode.new }
-
-      loop do
-        mark = input.mark
-
-        if skip_whitespace
-          r = Apply.new(:spaces).parse(grammar, input, false, false)
-        end
-
-        r = expr.parse(grammar, input, skip_whitespace, false)
-
-        if r.fail?
-          input.reset(mark)
-          return res
-        end
-
-        res = Success.new(nodes) if res.fail?
-        results = Array(r.parse_tree)
-        raise "results.size != nodes.size" unless results.size == res.parse_tree.size
-
-        res.parse_tree.zip(results) do |iteration, result|
-          iteration.children << result
-        end
-
-        res.parse_tree.each do |iter|
-          iter.source_string << results.map(&:source_string).join
-        end
-      end
-    end
-
-    def arity
-      expr.arity
+  class ZeroOrMore < Iter
+    def range
+      0..Float::INFINITY
     end
   end
 
-  class Maybe
-    attr_reader :expr
-
-    def initialize(expr)
-      @expr = expr
+  class OneOrMore < Iter
+    def range
+      1..Float::INFINITY
     end
+  end
 
-    def parse(grammar, input, skip_whitespace, start_rule)
-      nodes = expr.arity.times.map { IterationNode.new }
-      res = Success.new(nodes)
-
-      mark = input.mark
-
-      if skip_whitespace
-        r = Apply.new(:spaces).parse(grammar, input, false, false)
-      end
-
-      if (r = expr.parse(grammar, input, skip_whitespace, false)).success?
-        results = Array(r.parse_tree)
-        raise "results.size != nodes.size" unless results.size == res.parse_tree.size
-
-        res.parse_tree.zip(results) do |iteration, result|
-          iteration.children << result
-        end
-
-        res.parse_tree.each do |iter|
-          iter.source_string << results.map(&:source_string).join
-        end
-      else
-        input.reset(mark)
-      end
-
-      res
-    end
-
-    def arity
-      expr.arity
+  class Maybe < Iter
+    def range
+      0..1
     end
   end
 
   class Any
-    def parse(grammar, input, skip_whitespace, start_rule)
-      if input.size > 0
-        Success.new(TerminalNode.new(input.getc))
+    def parse(state)
+      if state.input.size > 0
+        state.push(TerminalNode.new(state.input.getc))
+        true
       else
-        Failure.new
+        false
       end
     end
 
     def arity
       1
+    end
+
+    def skip_space?
+      true
     end
   end
 
   # Is this the right thing to do for empty
   # rules? I'm not sure.
   class Never
-    def parse(grammar, input, skip_whitespace, start_rule)
-      Failure.new
+    def parse(state)
+      false
     end
 
     def arity
       0
+    end
+
+    def skip_space?
+      false
     end
   end
 
@@ -427,20 +379,20 @@ module Peg
       @expr = expr
     end
 
-    def parse(grammar, input, skip_whitespace, start_rule)
-      mark = input.mark
-      res = expr.parse(grammar, input, skip_whitespace, false)
-      input.reset(mark)
+    def parse(state)
+      pos = state.input.pos
+      res = state.eval(expr)
+      state.input.reset(pos)
 
-      if res.success?
-        Success.new(nil)
-      else
-        Failure.new
-      end
+      res
     end
 
     def arity
       expr.arity
+    end
+
+    def skip_space?
+      false
     end
   end
 
@@ -451,20 +403,20 @@ module Peg
       @expr = expr
     end
 
-    def parse(grammar, input, skip_whitespace, start_rule)
-      mark = input.mark
-      res = expr.parse(grammar, input, skip_whitespace, false)
-      input.reset(mark)
+    def parse(state)
+      pos = state.input.pos
+      res = state.eval(expr)
+      state.input.reset(pos)
 
-      if res.success?
-        Failure.new
-      else
-        Success.new(nil)
-      end
+      !res
     end
 
     def arity
       0
+    end
+
+    def skip_space?
+      false
     end
   end
 
@@ -475,53 +427,53 @@ module Peg
       @rule = rule
     end
 
-    def parse(grammar, input, skip_whitespace, start_rule)
-      # Use ancestors to make this work with mixins, just like
-      # the super keyword.
-      #
-      # This might need to be changed to handle a weird case if
-      # someone prepends a mixin to grammar.
-      superclass = grammar.class.ancestors[1]
+    def parse(state)
+      body = state.super_body
 
-      m = superclass.instance_method(rule)
-      body = m.bind(grammar).call
+      state.eval(body)
+    end
 
-      res = body.parse(grammar, input, skip_whitespace, false)
+    def arity
+      1
+    end
 
-      return res
+    def skip_space?
+      true
     end
   end
 
   class Apply
-    @@indent = 0
-
     attr_reader :rule
 
     def initialize(rule)
       @rule = rule
     end
 
-    def parse(grammar, input, skip_whitespace, start_rule)
-      skip_whitespace = rule.to_s[0].match?(/\A[[:upper:]]\z/)
+    def parse(state)
+      state.applying(self) do
+        body = state.current_body
 
-      if skip_whitespace
-        res = Apply.new(:spaces).parse(grammar, input, false, false)
+        if state.eval(body)
+          bindings = state.pop(body.arity)
+          state.push(NonterminalNode.new(rule, bindings))
+
+          true
+        else
+          false
+        end
       end
+    end
 
-      body = grammar.send(rule)
-      res = body.parse(grammar, input, skip_whitespace, false)
-
-      return res if res.fail?
-
-      if skip_whitespace && start_rule
-        r = Apply.new(:spaces).parse(grammar, input, false, false)
-      end
-
-      Success.new(NonterminalNode.new(rule, Array(res.parse_tree)))
+    def syntactic?
+      rule.to_s[0] == rule.to_s[0].upcase
     end
 
     def arity
       1
+    end
+
+    def skip_space?
+      true
     end
   end
 end
