@@ -71,7 +71,7 @@ module Peg
         pop(bindings.size-nbindings)
       end
 
-      if expr == start_expr && expr.skip_space?
+      if expr == start_expr && expr.skip_space? && expr != Spaces
         eval(Spaces)
         pop
       end
