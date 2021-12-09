@@ -174,7 +174,7 @@ module Peg
       @value = value
     end
 
-    def parse(state)
+    def eval(state)
       if state.input.start_with?(value)
         state.push(TerminalNode.new(value))
         true
@@ -199,7 +199,7 @@ module Peg
       @exprs = exprs
     end
 
-    def parse(state)
+    def eval(state)
       exprs.each do |e|
         unless state.eval(e)
           return false
@@ -225,7 +225,7 @@ module Peg
       @options = options
     end
 
-    def parse(state)
+    def eval(state)
       options.each do |opt|
         if state.eval(opt)
           return true
@@ -252,7 +252,7 @@ module Peg
       @chars = chars
     end
 
-    def parse(state)
+    def eval(state)
       return false if state.input.empty?
 
       c = state.input.getc
@@ -281,7 +281,7 @@ module Peg
       @expr = expr
     end
 
-    def parse(state)
+    def eval(state)
       matches = 0
       cols = arity.times.map { [] }
       source_string = ""
@@ -338,7 +338,7 @@ module Peg
   end
 
   class Any
-    def parse(state)
+    def eval(state)
       if state.input.size > 0
         state.push(TerminalNode.new(state.input.getc))
         true
@@ -359,7 +359,7 @@ module Peg
   # Is this the right thing to do for empty
   # rules? I'm not sure.
   class Never
-    def parse(state)
+    def eval(state)
       false
     end
 
@@ -379,7 +379,7 @@ module Peg
       @expr = expr
     end
 
-    def parse(state)
+    def eval(state)
       pos = state.input.pos
       res = state.eval(expr)
       state.input.reset(pos)
@@ -403,7 +403,7 @@ module Peg
       @expr = expr
     end
 
-    def parse(state)
+    def eval(state)
       pos = state.input.pos
       res = state.eval(expr)
       state.input.reset(pos)
@@ -427,7 +427,7 @@ module Peg
       @rule = rule
     end
 
-    def parse(state)
+    def eval(state)
       body = state.super_body
 
       state.eval(body)
@@ -449,7 +449,7 @@ module Peg
       @rule = rule
     end
 
-    def parse(state)
+    def eval(state)
       state.applying(self) do
         body = state.current_body
 

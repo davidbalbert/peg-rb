@@ -64,7 +64,7 @@ module Peg
         pop
       end
 
-      res = expr.parse(self)
+      res = expr.eval(self)
 
       if !res
         input.reset(pos)
