@@ -2,7 +2,7 @@ require 'peg/input_stream'
 
 module Peg
   class MatchState
-    attr_reader :grammar, :input, :start_expr, :bindings, :applications, :start_pos_stack
+    attr_reader :grammar, :input, :start_expr, :bindings, :applications, :start_pos_stack, :memo
 
     def initialize(grammar, input, start_expr)
       @grammar = grammar
@@ -11,6 +11,7 @@ module Peg
       @bindings = []
       @applications = []
       @start_pos_stack = []
+      @memo = {}
     end
 
     def result
@@ -81,7 +82,7 @@ module Peg
       start_pos_stack.pop
 
       if !res
-        return
+        return res
       end
 
       if expr == start_expr && expr.skip_space? && expr != Spaces
@@ -104,6 +105,35 @@ module Peg
 
     def pop(*args)
       bindings.pop(*args)
+    end
+
+    def pos
+      input.pos
+    end
+
+    def memoized?(pos, rule)
+      memo.key?([pos, rule])
+    end
+
+    def memoize_success(pos, rule, parse_tree)
+      memo[[pos, rule]] = [parse_tree, input.pos]
+    end
+
+    def memoize_failure(pos, rule)
+      memo[[pos, rule]] = [nil, pos]
+    end
+
+    def use_memoized(pos, rule)
+      parse_tree, end_pos = memo[[pos, rule]]
+
+      input.reset(end_pos)
+
+      if parse_tree
+        push(parse_tree)
+        true
+      else
+        false
+      end
     end
   end
 end

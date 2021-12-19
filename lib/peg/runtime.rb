@@ -415,15 +415,27 @@ module Peg
     end
 
     def eval(state)
+      pos = state.pos
+
+      if state.memoized?(pos, rule)
+        return state.use_memoized(pos, rule)
+      end
+
       state.applying(self) do
         body = state.current_body
 
         if state.eval(body)
           bindings = state.pop(body.arity)
-          state.push(NonterminalNode.new(rule, bindings, state.current_substring))
+
+          parse_tree = NonterminalNode.new(rule, bindings, state.current_substring)
+
+          state.push(parse_tree)
+          state.memoize_success(pos, rule, parse_tree)
 
           true
         else
+          state.memoize_failure(pos, rule)
+
           false
         end
       end
