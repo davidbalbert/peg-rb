@@ -415,7 +415,7 @@ module Peg
     end
 
     def eval(state)
-      pos = state.pos
+      pos = state.input.pos
 
       if state.memoized?(pos, rule)
         return state.use_memoized(pos, rule)

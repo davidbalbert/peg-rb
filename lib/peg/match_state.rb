@@ -107,10 +107,6 @@ module Peg
       bindings.pop(*args)
     end
 
-    def pos
-      input.pos
-    end
-
     def memoized?(pos, rule)
       memo.key?([pos, rule])
     end
