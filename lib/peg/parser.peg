@@ -1,21 +1,21 @@
 Parser {
   Grammar         <- identifier SuperGrammar? "{" Definition+ "}" endOfFile
   SuperGrammar    <- "<:" identifier
-  Definition      <- identifier "<-" InlineRules -- define
+  Definition      <- identifier assign InlineRules -- define
                    / identifier "+=" Expression  -- extend
-  InlineRules     <- NamedSequence ( "/" NamedSequence )*
-  Expression      <- Sequence ( "/" Sequence )*
+  InlineRules     <- NamedSequence ( or NamedSequence )*
+  Expression      <- Sequence ( or Sequence )*
   NamedSequence   <- Sequence "--" identifier -- inline
                    / Sequence
   Sequence        <- Prefix*
   Prefix          <- "&" Suffix -- and
-                   / "!" Suffix -- not
+                   / not Suffix -- not
                    / Suffix
   Suffix          <- Primary "?"  -- maybe
                    / Primary "*"  -- star
                    / Primary "+"  -- plus
                    / Primary
-  Primary         <- identifier !"<-" !"+="  -- identifier
+  Primary         <- identifier !assign !"+="  -- identifier
                    / "(" Expression ")"      -- group
                    / literal
                    / charClass
@@ -30,22 +30,25 @@ Parser {
   range           <- char '-' char -- multiple
                    / char
 
-  char            <- '\\\\'                -- backslash
-                   / '\\\"'                -- doubleQuote
-                   / '\\\''                -- singleQuote
-                   / '\\['                 -- openSquare
-                   / '\\]'                 -- closeSquare
-                   / '\\b'                 -- backspace
-                   / '\\n'                 -- newline
-                   / '\\r'                 -- carriageReturn
-                   / '\\t'                 -- tab
-                   / '\\u' hex hex hex hex -- unicode
-                   / '\\x' hex hex         -- hex
-                   / !'\\' .               -- regular
+  char            <- '\\\\'                        -- backslash
+                   / '\\\"'                        -- doubleQuote
+                   / '\\\''                        -- singleQuote
+                   / '\\['                         -- openSquare
+                   / '\\]'                         -- closeSquare
+                   / '\\b'                         -- backspace
+                   / '\\n'                         -- newline
+                   / '\\r'                         -- carriageReturn
+                   / '\\t'                         -- tab
+                   / '\\u' hex hex hex hex hex hex -- unicode
+                   / '\\x' hex hex                 -- hex
+                   / !'\\' .                       -- regular
 
   hex             <- [0-9a-fA-F]
   space           += comment
   comment         <- '#' ( !endOfLine . )* endOfLine
+  not             <- "!" / "~"
+  or              <- "/" / "|"
+  assign          <- "<-" / "="
   endOfLine       <- '\r\n' / '\n' / '\r'
   endOfFile       <- !.
 }

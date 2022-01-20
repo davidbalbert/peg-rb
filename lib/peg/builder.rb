@@ -179,8 +179,8 @@ module Peg
           "\t"
         end
 
-        def char_unicode(_, h1, h2, h3, h4)
-          digits = [h1, h2, h3, h4]
+        def char_unicode(_, h1, h2, h3, h4, h5, h6)
+          digits = [h1, h2, h3, h4, h5, h6]
           hex = "0x" + digits.map { |d| d.visit(builder) }.join
 
           hex.to_i(16).chr(Encoding::UTF_8)
