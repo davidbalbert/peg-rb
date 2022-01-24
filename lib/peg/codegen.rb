@@ -1,6 +1,33 @@
 module Peg
   using Indentation
 
+  class Rule
+    attr_reader :name, :body
+
+    def initialize(name, body)
+      @name = name
+      @body = body
+    end
+
+    def parameters
+      []
+    end
+
+    def to_rb
+      if parameters.empty?
+        params = ""
+      else
+        params = "(" + parameters.join(", ") + ")"
+      end
+
+      <<~RUBY
+        def #{name}#{params}
+        #{body.to_rb.indent(2)}
+        end
+      RUBY
+    end
+  end
+
   class Grammar
     def self.to_rb(class_name=name)
       new.to_rb(class_name)
@@ -133,7 +160,7 @@ module Peg
   class Super
     def to_rb
       <<~RUBY
-        Peg::Super.new(:#{rule})
+        super
       RUBY
     end
   end

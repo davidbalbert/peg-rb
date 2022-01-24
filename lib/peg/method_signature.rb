@@ -67,7 +67,7 @@ module Peg
     class Parameter
       attr_reader :name, :type, :default
 
-      ATOMS = [String, Symbol, Integer, Float, Complex, TrueClass, FalseClass, NilClass, Regexp]
+      ATOMS = [String, Symbol, Integer, Float, Complex, TrueClass, FalseClass, NilClass, Regexp, Module]
 
       def initialize(type, name, default=nil)
         @type, @name, @default = type, name.to_s, default

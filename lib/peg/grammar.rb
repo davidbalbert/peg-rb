@@ -29,10 +29,6 @@ module Peg
     end
 
     def parse(input, rule:)
-      Apply.new(rule).parse(self, InputStream.new(input), false, true)
-    end
-
-    def parse(input, rule:)
       MatchState.new(self, input, Apply.new(rule)).result
     end
   end

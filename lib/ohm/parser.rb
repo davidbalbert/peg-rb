@@ -6,7 +6,6 @@ require 'peg/runtime'
 
 class Ohm::Parser < Peg::BuiltInRules
   self.default_rule = :Seq
-  self.rules = [:Seq, :Iter, :Iter_star, :Iter_plus, :Iter_opt, :Pred, :Pred_not, :Pred_lookahead, :Lex, :Lex_lex, :Base, :Base_application, :Base_range, :Base_terminal, :Base_paren, :ruleDescr, :ruleDescrText, :caseName, :name, :nameFirst, :nameRest, :ident, :terminal, :oneCharTerminal, :ident, :terminal, :oneCharTerminal, :terminalChar, :escapeChar, :escapeChar_backslash, :escapeChar_doubleQuote, :escapeChar_singleQuote, :escapeChar_backspace, :escapeChar_lineFeed, :escapeChar_carriageReturn, :escapeChar_tab, :escapeChar_unicodeCodePoint, :escapeChar_unicodeEscape, :escapeChar_hexEscape, :space, :comment, :comment_singleLine, :comment_multiLine, :tokens, :token, :operator, :punctuation]
 
   def Seq
     Peg::ZeroOrMore.new(
@@ -337,7 +336,7 @@ class Ohm::Parser < Peg::BuiltInRules
   def space
     Peg::Choice.new(
       Peg::Apply.new(:comment),
-      Peg::Super.new(:space)
+      super
     )
   end
 

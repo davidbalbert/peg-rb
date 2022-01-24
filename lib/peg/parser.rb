@@ -6,7 +6,6 @@ require 'peg/runtime'
 
 class Peg::Parser < Peg::BuiltInRules
   self.default_rule = :Grammar
-  self.rules = [:Grammar, :SuperGrammar, :Definition, :Definition_define, :Definition_extend, :InlineRules, :Expression, :NamedSequence, :NamedSequence_inline, :Sequence, :Prefix, :Prefix_and, :Prefix_not, :Suffix, :Suffix_maybe, :Suffix_star, :Suffix_plus, :Primary, :Primary_identifier, :Primary_group, :Primary_any, :identifier, :identStart, :identCont, :literal, :charClass, :range, :range_multiple, :char, :char_backslash, :char_doubleQuote, :char_singleQuote, :char_openSquare, :char_closeSquare, :char_backspace, :char_newline, :char_carriageReturn, :char_tab, :char_unicode, :char_hex, :char_regular, :hex, :space, :comment, :not, :or, :assign, :endOfLine, :endOfFile]
 
   def Grammar
     Peg::Seq.new(
@@ -352,7 +351,7 @@ class Peg::Parser < Peg::BuiltInRules
   def space
     Peg::Choice.new(
       Peg::Apply.new(:comment),
-      Peg::Super.new(:space)
+      super
     )
   end
 

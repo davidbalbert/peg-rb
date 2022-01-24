@@ -5,14 +5,17 @@ require 'peg/semantics'
 require 'peg/built_in_rules'
 require 'peg/parser'
 
+require 'peg/codegen'
+
 module Peg
   using Constantize
+  using Indentation
 
   class Builder
     class Visitor < Semantics[Parser]
-      def_operation :visit do |builder|
+      def_operation :to_rb do |builder, class_name=nil|
         def Grammar(name, super_grammar, _, defs, _, _)
-          name = name.visit(builder)
+          grammar = class_name || name.visit(builder)
 
           if !super_grammar.children.empty?
             super_grammar = super_grammar.children[0].visit(builder)
@@ -20,13 +23,45 @@ module Peg
             super_grammar = Peg::BuiltInRules
           end
 
-          builder.super_grammar = super_grammar
-
           defs.children.each do |d|
             d.visit(builder)
           end
 
-          builder.grammar
+          <<~RUBY
+            class #{grammar} < #{super_grammar.name}
+              self.default_rule = :#{builder.rules.first&.name}
+
+            #{
+              builder.rules.map do |rule|
+                rule.to_rb.indent(2)
+              end.join("\n\n")
+            }
+            end
+          RUBY
+        end
+      end
+
+      def_operation :visit do |builder|
+        def Grammar(name, super_grammar, _, defs, _, _)
+          if !super_grammar.children.empty?
+            super_grammar = super_grammar.children[0].visit(builder)
+          else
+            super_grammar = Peg::BuiltInRules
+          end
+
+          rules = defs.children.each do |d|
+            d.visit(builder)
+          end
+
+          grammar = Class.new(super_grammar) do
+            self.default_rule = rules.first&.name
+          end
+
+          builder.rules.each do |rule|
+            grammar.class_eval(rule.to_rb)
+          end
+
+          grammar
         end
 
         def SuperGrammar(_, name)
@@ -201,13 +236,14 @@ module Peg
       end
     end
 
-    attr_reader :source, :namespace, :current_rule_name
-    attr_accessor :super_grammar
+    attr_reader :source, :namespace
+    attr_accessor :current_rule_name
 
     def initialize(source, namespace:)
       @source = source
       @namespace = namespace
-      @first = true
+      @rules = {}
+      @rule_names = []
     end
 
     def build
@@ -218,34 +254,24 @@ module Peg
       Visitor.wrap(result).visit(self)
     end
 
-    def grammar
-      @grammar ||= Class.new(super_grammar)
-    end
+    def to_rb(class_name)
+      result = Peg::Parser.parse(source)
 
-    def current_rule_name=(name)
-      if @first
-        grammar.class_eval do
-          self.default_rule = name.intern
-        end
+      raise "Couldn't parse" if result.fail?
 
-        @first = false
-      end
-
-      @current_rule_name = name
+      Visitor.wrap(result).to_rb(self, class_name)
     end
 
     def declare_rule(name)
-      grammar.class_eval do
-        rules << name.intern
-      end
+      @rule_names << name
     end
 
     def def_rule(name, body)
-      grammar.class_eval do
-        define_method name do
-          body
-        end
-      end
+      @rules[name] = Rule.new(name, body)
+    end
+
+    def rules
+      @rule_names.map { |name| @rules[name] }
     end
   end
 end

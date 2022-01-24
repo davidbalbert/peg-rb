@@ -6,7 +6,6 @@ require 'peg/runtime'
 
 class Peg::BuiltInRules < Peg::Grammar
   self.default_rule = :spaces
-  self.rules = [:spaces, :space]
 
   def spaces
     Peg::ZeroOrMore.new(
